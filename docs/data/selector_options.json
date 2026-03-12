@@ -1,0 +1,22 @@
+[
+  {
+    "date": "2026-03-01",
+    "area": "FR",
+    "contract": "00:00-00:15",
+    "contract_sort": 0,
+    "rule": "DA_IDA1",
+    "buy_price": 35.01,
+    "sell_price": 42.51,
+    "profit": 7.5
+  },
+  {
+    "date": "2026-03-01",
+    "area": "FR",
+    "contract": "00:15-00:30",
+    "contract_sort": 15,
+    "rule": "DA_IDA1",
+    "buy_price": 35.01,
+    "sell_price": 38.51,
+    "profit": 3.5
+  }
+]
