@@ -6,3 +6,96 @@
   color: #475467;
   font-size: 14px;
 }
+
+.optimizer-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.optimizer-grid-3 {
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+}
+
+.optimizer-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.optimizer-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #101828;
+  font-weight: 600;
+}
+
+.optimizer-check input {
+  width: 16px;
+  height: 16px;
+}
+
+.optimizer-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.optimizer-primary-btn {
+  border: 1px solid #2563eb;
+  border-radius: 12px;
+  padding: 11px 18px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+  transition: 0.2s ease;
+}
+
+.optimizer-primary-btn:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.optimizer-result-card {
+  padding: 18px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #0f172a;
+  line-height: 1.6;
+}
+
+.optimizer-result-title {
+  font-weight: 800;
+  color: #1d4ed8;
+  margin-bottom: 8px;
+}
+
+.optimizer-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 8px 18px;
+  margin-top: 10px;
+}
+
+@media (max-width: 1000px) {
+  .optimizer-grid-3,
+  .optimizer-checkbox-grid,
+  .optimizer-result-grid {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .optimizer-grid-3,
+  .optimizer-checkbox-grid,
+  .optimizer-result-grid {
+    grid-template-columns: 1fr;
+  }
+}
