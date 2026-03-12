@@ -515,6 +515,7 @@ function renderCumulativeCurve(filtered) {
   if (typeof Plotly === "undefined") return;
 
   const labels = filtered.map(x => `${x.date} | ${x.contract}`);
+  const xVals = filtered.map((_, i) => i);
   const profits = filtered.map(x => Number(x.profit));
 
   const cumulative = [];
@@ -524,21 +525,63 @@ function renderCumulativeCurve(filtered) {
     return next;
   }, 0);
 
+  const step = Math.max(1, Math.ceil(labels.length / 18));
   const tickVals = [];
   const tickText = [];
 
-  labels.forEach((label, i) => {
-    if (i % 4 === 0) {
-      const parts = label.split(" | ");
-      if (parts.length === 2) {
-        tickVals.push(label);
-        tickText.push(`${parts[0].slice(5)}<br>${parts[1]}`);
-      } else {
-        tickVals.push(label);
-        tickText.push(label);
-      }
+  for (let i = 0; i < labels.length; i += step) {
+    const parts = labels[i].split(" | ");
+    if (parts.length === 2) {
+      const shortDate = parts[0].slice(5);
+      tickVals.push(i);
+      tickText.push(`${shortDate}<br>${parts[1]}`);
+    } else {
+      tickVals.push(i);
+      tickText.push(labels[i]);
     }
-  });
+  }
+
+  Plotly.newPlot(
+    "cumulativeCurve",
+    [
+      {
+        x: xVals,
+        y: cumulative,
+        mode: "lines+markers",
+        line: { color: "#16a34a", width: 3 },
+        marker: { size: 5 },
+        customdata: labels,
+        hovertemplate: "%{customdata}<br>Cumulative: %{y:.2f} €/MWh<extra></extra>"
+      }
+    ],
+    {
+      margin: { l: 70, r: 20, t: 20, b: 120 },
+      paper_bgcolor: "white",
+      plot_bgcolor: "white",
+      xaxis: {
+        title: "Date | Contract",
+        tickmode: "array",
+        tickvals: tickVals,
+        ticktext: tickText,
+        tickangle: 0,
+        showgrid: false,
+        zeroline: false,
+        automargin: true
+      },
+      yaxis: {
+        title: "Cumulative P&L (€/MWh)",
+        gridcolor: "#eaecf0",
+        automargin: true
+      }
+    },
+    {
+      responsive: true,
+      displayModeBar: false
+    }
+  );
+}
+
+
 
   Plotly.newPlot(
     "cumulativeCurve",
