@@ -168,28 +168,55 @@ function populateSelectors() {
   updateContracts();
 }
 
-function updateContracts() {
-  const area = document.getElementById("area").value;
-  const rule = document.getElementById("rule").value;
-  const startDate = document.getElementById("startDate").value;
-  const endDate = document.getElementById("endDate").value;
+function render() {
+  const filtered = getFilteredRows();
 
-  const filtered = data
-    .filter(d => {
-      if (d.area !== area) return false;
-      if (d.rule !== rule) return false;
-      if (startDate && d.date < startDate) return false;
-      if (endDate && d.date > endDate) return false;
-      return true;
-    })
-    .sort(compareRowsChronologically);
+  if (!filtered.length) {
+    document.getElementById("profit").innerText = "-";
+    document.getElementById("contractCount").innerText = "0";
+    document.getElementById("avgProfit").innerText = "-";
+    document.getElementById("winRate").innerText = "-";
 
-  const contracts = unique(filtered.map(x => x.contract));
-  setOptions("contracts", contracts);
-  selectAllOptions("contracts");
-  setActivePreset("presetBaseBtn");
+    const bestEl = document.getElementById("bestContract");
+    const worstEl = document.getElementById("worstContract");
+    const bessEl = document.getElementById("bessStrategy");
+    const bessMultiEl = document.getElementById("bessMultiCycle");
+    const topEl = document.getElementById("topContracts");
+    const bottomEl = document.getElementById("bottomContracts");
+    const tableEl = document.getElementById("table");
 
-  render();
+    if (bestEl) bestEl.innerHTML = "-";
+    if (worstEl) worstEl.innerHTML = "-";
+    if (bessEl) bessEl.innerHTML = "No data for the selected filters.";
+    if (bessMultiEl) bessMultiEl.innerHTML = "No data for the selected filters.";
+    if (topEl) topEl.innerHTML = "No data";
+    if (bottomEl) bottomEl.innerHTML = "No data";
+    if (tableEl) {
+      tableEl.innerHTML = `
+        <div style="padding:16px;border:1px solid #fda29b;background:#fff1f3;border-radius:12px;color:#b42318;">
+          <strong>No data for selected filters</strong><br />
+          Try another date range, area, or strategy.
+        </div>
+      `;
+    }
+
+    Plotly.newPlot("cumulativeCurve", [], { annotations: [{ text: "No data", showarrow: false }] }, { responsive: true, displayModeBar: false });
+    Plotly.newPlot("contractBar", [], { annotations: [{ text: "No data", showarrow: false }] }, { responsive: true, displayModeBar: false });
+    Plotly.newPlot("heatmap", [], { annotations: [{ text: "No data", showarrow: false }] }, { responsive: true, displayModeBar: false });
+    Plotly.newPlot("histogram", [], { annotations: [{ text: "No data", showarrow: false }] }, { responsive: true, displayModeBar: false });
+
+    return;
+  }
+
+  renderMetricCards(filtered);
+  renderBessStrategy(filtered);
+  renderMultiCycleBess(filtered);
+  renderCumulativeCurve(filtered);
+  renderContractBar(filtered);
+  renderHeatmap(filtered);
+  renderHistogram(filtered);
+  renderTopBottomTables(filtered);
+  renderBreakdownTable(filtered);
 }
 
 function getFilteredRows() {
