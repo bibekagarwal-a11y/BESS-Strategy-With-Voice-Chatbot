@@ -98,4 +98,8 @@
   .optimizer-result-grid {
     grid-template-columns: 1fr;
   }
+
+  .optimizer-result-card strong {
+  color: #0f172a;
+}
 }
