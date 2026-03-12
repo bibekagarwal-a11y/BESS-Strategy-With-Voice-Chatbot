@@ -229,7 +229,6 @@ function getFilteredRows() {
 
   return filtered;
 }
-
 function renderMetricCards(filtered) {
   const profits = filtered.map(x => Number(x.profit));
   const total = profits.reduce((a, b) => a + b, 0);
@@ -270,6 +269,7 @@ function renderMetricCards(filtered) {
       : "-";
   }
 }
+
 
 function renderBessStrategy(filtered) {
   const bessEl = document.getElementById("bessStrategy");
