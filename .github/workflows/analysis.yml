@@ -2,7 +2,7 @@ name: Electricity Market Analysis
 
 on:
   schedule:
-    - cron: "0 7 * * *"
+    - cron: "0 7 * * *"  # Daily at 7 AM UTC
   workflow_dispatch:
 
 jobs:
@@ -63,10 +63,8 @@ path = Path("docs/data/contract_profits.json")
 data = json.loads(path.read_text())
 print(f"✓ contract_profits.json is valid JSON")
 print(f"✓ contract_profits.json row count: {len(data)}")
-
 if len(data) > 0:
-    sample = data[0]
-    print("✓ sample keys:", sorted(sample.keys()))
+    print("✓ sample keys:", sorted(data[0].keys()))
 PY
           else
             echo "✗ contract_profits.json not found"
