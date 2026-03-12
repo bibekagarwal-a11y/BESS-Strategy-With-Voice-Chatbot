@@ -84,7 +84,7 @@ body {
 
 .controls-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.8fr);
   gap: 20px;
   align-items: start;
 }
@@ -442,7 +442,7 @@ tbody tr:hover {
   }
 
   .filters-top {
-    grid-template-columns: repeat(3, minmax(140px, 1fr));
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
   }
 }
 
@@ -465,9 +465,9 @@ tbody tr:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .filters-top {
-    grid-template-columns: repeat(2, minmax(140px, 1fr));
-  }
+.filters-top {
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+}
 }
 
 @media (max-width: 640px) {
