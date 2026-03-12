@@ -27,7 +27,7 @@ body {
   background:
     radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 30%),
     radial-gradient(circle at top right, rgba(124, 58, 237, 0.14), transparent 28%),
-    linear-gradient(180deg, var(--bg) 0%, #0f172a 24%, #eef2ff 24%, #f8fafc 100%);
+    linear-gradient(180deg, var(--bg) 0%, #0f172a 100%);
   min-height: 100vh;
 }
 
