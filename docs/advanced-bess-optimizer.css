@@ -174,4 +174,21 @@
   #optimizerSocTrace {
     min-height: 280px;
   }
+  .optimizer-scope-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.1fr 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .optimizer-scope-grid {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .optimizer-scope-grid {
+    grid-template-columns: 1fr;
+  }
+}
 }
