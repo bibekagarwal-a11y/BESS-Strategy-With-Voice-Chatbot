@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Advanced BESS Optimizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="index.html" class="top-nav-link">← Back to Market Analysis</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Advanced BESS Optimizer</h1>
+      <p class="hero-sub">
+        Configure advanced battery optimization settings and run deeper scenario analysis.
+      </p>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Optimization Settings</h2>
+        <p>Set advanced BESS parameters for optimization scenarios.</p>
+      </div>
+
+      <div class="filters-top">
+        <div class="filter">
+          <label for="capacity">Capacity (MWh)</label>
+          <input type="number" id="capacity" value="1" min="0" step="0.1">
+        </div>
+
+        <div class="filter">
+          <label for="power">Power (MW)</label>
+          <input type="number" id="power" value="1" min="0" step="0.1">
+        </div>
+
+        <div class="filter">
+          <label for="efficiency">η</label>
+          <input type="number" id="efficiency" value="0.9" min="0" max="1" step="0.01">
+        </div>
+
+        <div class="filter">
+          <label for="minSoc">Min SoC (%)</label>
+          <input type="number" id="minSoc" value="10" min="0" max="100" step="1">
+        </div>
+
+        <div class="filter">
+          <label for="maxSoc">Max SoC (%)</label>
+          <input type="number" id="maxSoc" value="100" min="0" max="100" step="1">
+        </div>
+
+        <div class="filter">
+          <label for="cycleCost">Cycle Cost (€/MWh)</label>
+          <input type="number" id="cycleCost" value="0" min="0" step="0.1">
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Advanced Objective</h2>
+        <p>Placeholder page for future BESS optimization logic.</p>
+      </div>
+
+      <div class="bess-box">
+        <div class="bess-title">Status</div>
+        <div class="bess-content">
+          This page is ready for advanced optimizer inputs. Next step is wiring these settings into your optimization engine.
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
