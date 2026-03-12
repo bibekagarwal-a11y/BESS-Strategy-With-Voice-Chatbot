@@ -481,7 +481,7 @@ function renderCumulativeCurve(filtered) {
     return next;
   }, 0);
 
-  const step = Math.max(1, Math.ceil(labels.length / 18));
+  const step = Math.max(1, Math.ceil(labels.length / 12));
   const tickVals = [];
   const tickText = [];
 
@@ -490,7 +490,7 @@ function renderCumulativeCurve(filtered) {
     if (parts.length === 2) {
       const shortDate = parts[0].slice(5);
       tickVals.push(i);
-      tickText.push(`${shortDate}<br>${parts[1]}`);
+      tickText.push(`${shortDate} ${parts[1]}`);
     } else {
       tickVals.push(i);
       tickText.push(labels[i]);
@@ -511,7 +511,7 @@ function renderCumulativeCurve(filtered) {
       }
     ],
     {
-      margin: { l: 70, r: 20, t: 20, b: 120 },
+      margin: { l: 70, r: 20, t: 20, b: 170 },
       paper_bgcolor: "white",
       plot_bgcolor: "white",
       xaxis: {
@@ -519,7 +519,7 @@ function renderCumulativeCurve(filtered) {
         tickmode: "array",
         tickvals: tickVals,
         ticktext: tickText,
-        tickangle: 0,
+        tickangle: -55,
         showgrid: false,
         zeroline: false,
         automargin: true
@@ -536,6 +536,7 @@ function renderCumulativeCurve(filtered) {
     }
   );
 }
+
 
 function renderContractBar(filtered) {
   if (typeof Plotly === "undefined") return;
