@@ -511,9 +511,9 @@ function renderContractBar(filtered) {
     displayModeBar: false
   });
 }
-
 function renderCumulativeCurve(filtered) {
   if (typeof Plotly === "undefined") return;
+
   const labels = filtered.map(x => `${x.date} | ${x.contract}`);
   const profits = filtered.map(x => Number(x.profit));
 
@@ -524,24 +524,47 @@ function renderCumulativeCurve(filtered) {
     return next;
   }, 0);
 
-  Plotly.newPlot("cumulativeCurve", [{
-    x: labels,
-    y: cumulative,
-    mode: "lines+markers",
-    line: { color: "#16a34a", width: 3 },
-    marker: { size: 6 },
-    hovertemplate: "%{x}<br>Cumulative: %{y:.2f} €/MWh<extra></extra>"
-  }], {
-    margin: { l: 60, r: 20, t: 20, b: 120 },
-    paper_bgcolor: "white",
-    plot_bgcolor: "white",
-    xaxis: { title: "Date | Contract", tickangle: -60, gridcolor: "#eaecf0" },
-    yaxis: { title: "Cumulative P&L (€/MWh)", gridcolor: "#eaecf0" }
-  }, {
-    responsive: true,
-    displayModeBar: false
-  });
+  const tickVals = labels.filter((_, i) => i % 2 === 0);
+  const tickText = tickVals;
+
+  Plotly.newPlot(
+    "cumulativeCurve",
+    [
+      {
+        x: labels,
+        y: cumulative,
+        mode: "lines+markers",
+        line: { color: "#16a34a", width: 3 },
+        marker: { size: 6 },
+        hovertemplate: "%{x}<br>Cumulative: %{y:.2f} €/MWh<extra></extra>"
+      }
+    ],
+    {
+      margin: { l: 70, r: 20, t: 20, b: 150 },
+      paper_bgcolor: "white",
+      plot_bgcolor: "white",
+      xaxis: {
+        title: "Date | Contract",
+        tickangle: -55,
+        tickmode: "array",
+        tickvals: tickVals,
+        ticktext: tickText,
+        gridcolor: "#eaecf0",
+        automargin: true
+      },
+      yaxis: {
+        title: "Cumulative P&L (€/MWh)",
+        gridcolor: "#eaecf0",
+        automargin: true
+      }
+    },
+    {
+      responsive: true,
+      displayModeBar: false
+    }
+  );
 }
+
 
 function renderHeatmap(filtered) {
   if (typeof Plotly === "undefined") return;
