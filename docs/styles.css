@@ -409,4 +409,34 @@ tbody tr:hover {
   .chart-box > div[id] {
     min-height: 320px;
   }
+.breakdown-details {
+  width: 100%;
 }
+
+.breakdown-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 18px;
+  color: #101828;
+}
+
+.breakdown-summary::-webkit-details-marker {
+  display: none;
+}
+
+.breakdown-hint {
+  font-size: 13px;
+  font-weight: 500;
+  color: #667085;
+}
+
+.breakdown-body {
+  margin-top: 16px;
+}
+  
+
