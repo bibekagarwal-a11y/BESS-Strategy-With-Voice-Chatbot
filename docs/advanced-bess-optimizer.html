@@ -25,25 +25,107 @@
     <section class="panel">
       <div class="panel-header">
         <h2>Battery Constraints</h2>
-        <p>This section will contain BESS technical constraints.</p>
+        <p>Define the technical operating limits of the battery.</p>
       </div>
-      <div class="optimizer-placeholder">Coming in next step.</div>
+
+      <div class="optimizer-grid optimizer-grid-3">
+        <div class="filter">
+          <label for="bessPowerMw">BESS: MW *</label>
+          <input type="number" id="bessPowerMw" min="0" step="0.1" value="1">
+        </div>
+
+        <div class="filter">
+          <label for="bessCapacityMWh">BESS: MWh *</label>
+          <input type="number" id="bessCapacityMWh" min="0" step="0.1" value="2">
+        </div>
+
+        <div class="filter">
+          <label for="bessEfficiency">η</label>
+          <input type="number" id="bessEfficiency" min="0" max="1" step="0.01" value="0.9">
+        </div>
+
+        <div class="filter">
+          <label for="bessMinSoc">BESS: Min SoC in %</label>
+          <input type="number" id="bessMinSoc" min="0" max="100" step="1" value="10">
+        </div>
+
+        <div class="filter">
+          <label for="bessMaxSoc">BESS: Max SoC in %</label>
+          <input type="number" id="bessMaxSoc" min="0" max="100" step="1" value="90">
+        </div>
+
+        <div class="filter">
+          <label for="bessDailyCycleLimit">BESS: Daily Charge Cycle Limit</label>
+          <input type="number" id="bessDailyCycleLimit" min="0" step="0.1" value="2">
+        </div>
+      </div>
     </section>
 
     <section class="panel">
       <div class="panel-header">
         <h2>Market Participation</h2>
-        <p>This section will contain market selection options.</p>
+        <p>Select which markets the optimizer is allowed to use.</p>
       </div>
-      <div class="optimizer-placeholder">Coming in next step.</div>
+
+      <div class="optimizer-checkbox-grid">
+        <label class="optimizer-check">
+          <input type="checkbox" id="marketDA" checked>
+          <span>Day Ahead (DA)</span>
+        </label>
+
+        <label class="optimizer-check">
+          <input type="checkbox" id="marketIDA1" checked>
+          <span>IDA1</span>
+        </label>
+
+        <label class="optimizer-check">
+          <input type="checkbox" id="marketIDA2" checked>
+          <span>IDA2</span>
+        </label>
+
+        <label class="optimizer-check">
+          <input type="checkbox" id="marketIDA3" checked>
+          <span>IDA3</span>
+        </label>
+
+        <label class="optimizer-check">
+          <input type="checkbox" id="marketVWAP" checked>
+          <span>Intraday Continuous / VWAP</span>
+        </label>
+      </div>
     </section>
 
     <section class="panel">
       <div class="panel-header">
         <h2>Strategy Mode</h2>
-        <p>This section will contain charge / discharge / arbitrage mode selection.</p>
+        <p>Choose what the optimizer is allowed to do.</p>
       </div>
-      <div class="optimizer-placeholder">Coming in next step.</div>
+
+      <div class="optimizer-grid optimizer-grid-3">
+        <div class="filter">
+          <label for="strategyMode">Mode</label>
+          <select id="strategyMode">
+            <option value="charge_discharge">Charge + Discharge</option>
+            <option value="charge_only">Charge only</option>
+            <option value="discharge_only">Discharge only</option>
+            <option value="arbitrage">Quant / Buy low, sell high</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <label for="startDate">Start date</label>
+          <input type="date" id="startDate">
+        </div>
+
+        <div class="filter">
+          <label for="endDate">End date</label>
+          <input type="date" id="endDate">
+        </div>
+      </div>
+
+      <div class="optimizer-actions">
+        <button type="button" id="runOptimizerBtn" class="optimizer-primary-btn">Run Optimization</button>
+      </div>
     </section>
 
     <section class="panel">
@@ -51,7 +133,10 @@
         <h2>Results</h2>
         <p>This section will show recommended strategy, dispatch, and backtest output.</p>
       </div>
-      <div class="optimizer-placeholder">No optimization run yet.</div>
+
+      <div id="optimizerResult" class="optimizer-placeholder">
+        No optimization run yet.
+      </div>
     </section>
   </main>
 
