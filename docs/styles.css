@@ -95,7 +95,7 @@ body {
 
 .filters-top {
   display: grid;
-  grid-template-columns: 110px 1.25fr 1.15fr 150px 150px;
+  grid-template-columns: 90px 1.35fr 1.15fr 150px 150px;
   gap: 16px;
   margin-bottom: 20px;
   align-items: end;
@@ -204,8 +204,13 @@ body {
 
 .bess-config-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(110px, 1fr));
+  grid-template-columns: 1fr 1fr 110px;
   gap: 12px;
+  align-items: end;
+}
+.bess-config-grid label {
+  display: block;
+  min-height: 18px;
 }
 
 .bess-multi {
