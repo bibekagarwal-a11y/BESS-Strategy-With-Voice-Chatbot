@@ -27,6 +27,30 @@ function setHTML(id, value) {
   if (el) el.innerHTML = value;
 }
 
+function unique(arr) {
+  return [...new Set(arr)];
+}
+
+function parseDateContractToIndex(row) {
+  const datePart = String(row.date ?? "");
+  const contractPart = Number(row.contract_sort ?? 0);
+  return { datePart, contractPart };
+}
+
+function compareRowsChronologically(a, b) {
+  const aKey = parseDateContractToIndex(a);
+  const bKey = parseDateContractToIndex(b);
+
+  const dateCompare = aKey.datePart.localeCompare(bKey.datePart);
+  if (dateCompare !== 0) return dateCompare;
+  return aKey.contractPart - bKey.contractPart;
+}
+
+function getActiveDateField() {
+  const mode = byId("dateMode")?.value || "market";
+  return mode === "run" ? "run_date" : "date";
+}
+
 async function loadData() {
   try {
     const res = await fetch("./data/contract_profits.json", { cache: "no-store" });
@@ -104,10 +128,6 @@ function renderEmptyPlot(id) {
       displayModeBar: false
     }
   );
-}
-
-function unique(arr) {
-  return [...new Set(arr)];
 }
 
 function setOptions(id, values, labelMap = null) {
@@ -207,39 +227,35 @@ function applyContractPreset(presetName) {
   render();
 }
 
-function parseDateContractToIndex(row) {
-  const datePart = String(row.date);
-  const contractPart = Number(row.contract_sort ?? 0);
-  return { datePart, contractPart };
-}
+function updateDateInputs() {
+  const dateField = getActiveDateField();
+  const dates = unique(data.map(x => x[dateField])).filter(Boolean).sort();
 
-function compareRowsChronologically(a, b) {
-  const aKey = parseDateContractToIndex(a);
-  const bKey = parseDateContractToIndex(b);
-
-  const dateCompare = aKey.datePart.localeCompare(bKey.datePart);
-  if (dateCompare !== 0) return dateCompare;
-  return aKey.contractPart - bKey.contractPart;
-}
-
-function populateSelectors() {
-  const areas = unique(data.map(x => x.area)).filter(Boolean).sort();
-  const rules = unique(data.map(x => x.rule)).filter(Boolean).sort();
-  const dates = unique(data.map(x => x.date)).filter(Boolean).sort();
-
-  if (!areas.length) throw new Error("No areas found in data.");
-  if (!rules.length) throw new Error("No strategies found in data.");
-  if (!dates.length) throw new Error("No dates found in data.");
-
-  setOptions("area", areas);
-  setOptions("rule", rules, RULE_LABELS);
+  if (!dates.length) {
+    if (dateField === "run_date") {
+      throw new Error("No run_date values found in data. Add run_date to contract_profits.json generation.");
+    }
+    throw new Error(`No ${dateField} values found in data.`);
+  }
 
   const startDateEl = byId("startDate");
   const endDateEl = byId("endDate");
 
   if (startDateEl) startDateEl.value = dates[0];
   if (endDateEl) endDateEl.value = dates[dates.length - 1];
+}
 
+function populateSelectors() {
+  const areas = unique(data.map(x => x.area)).filter(Boolean).sort();
+  const rules = unique(data.map(x => x.rule)).filter(Boolean).sort();
+
+  if (!areas.length) throw new Error("No areas found in data.");
+  if (!rules.length) throw new Error("No strategies found in data.");
+
+  setOptions("area", areas);
+  setOptions("rule", rules, RULE_LABELS);
+
+  updateDateInputs();
   updateContracts();
 }
 
@@ -248,13 +264,14 @@ function updateContracts() {
   const rule = byId("rule")?.value || "";
   const startDate = byId("startDate")?.value || "";
   const endDate = byId("endDate")?.value || "";
+  const dateField = getActiveDateField();
 
   const filtered = data
     .filter(d => {
       if (area && d.area !== area) return false;
       if (rule && d.rule !== rule) return false;
-      if (startDate && d.date < startDate) return false;
-      if (endDate && d.date > endDate) return false;
+      if (startDate && String(d[dateField] ?? "") < startDate) return false;
+      if (endDate && String(d[dateField] ?? "") > endDate) return false;
       return true;
     })
     .sort(compareRowsChronologically);
@@ -279,13 +296,14 @@ function getFilteredRows() {
   const startDate = byId("startDate")?.value || "";
   const endDate = byId("endDate")?.value || "";
   const selectedContracts = getSelectedValues("contracts");
+  const dateField = getActiveDateField();
 
   let filtered = data
     .filter(d => {
       if (area && d.area !== area) return false;
       if (rule && d.rule !== rule) return false;
-      if (startDate && d.date < startDate) return false;
-      if (endDate && d.date > endDate) return false;
+      if (startDate && String(d[dateField] ?? "") < startDate) return false;
+      if (endDate && String(d[dateField] ?? "") > endDate) return false;
       if (selectedContracts.length && !selectedContracts.includes(d.contract)) return false;
       return true;
     })
@@ -649,14 +667,6 @@ function renderHeatmap(filtered) {
   );
 }
 
-function renderTopBottomTables(filtered) {
-  const top10 = [...filtered].sort((a, b) => b.profit - a.profit).slice(0, 10);
-  const bottom10 = [...filtered].sort((a, b) => a.profit - b.profit).slice(0, 10);
-
-  setHTML("topContracts", buildMiniTable(top10));
-  setHTML("bottomContracts", buildMiniTable(bottom10));
-}
-
 function buildMiniTable(rows) {
   if (!rows.length) return "<div>No data</div>";
 
@@ -688,6 +698,14 @@ function buildMiniTable(rows) {
       </tbody>
     </table>
   `;
+}
+
+function renderTopBottomTables(filtered) {
+  const top10 = [...filtered].sort((a, b) => b.profit - a.profit).slice(0, 10);
+  const bottom10 = [...filtered].sort((a, b) => a.profit - b.profit).slice(0, 10);
+
+  setHTML("topContracts", buildMiniTable(top10));
+  setHTML("bottomContracts", buildMiniTable(bottom10));
 }
 
 function renderBreakdownTable(filtered) {
@@ -728,7 +746,7 @@ function render() {
   const filtered = getFilteredRows();
 
   if (!filtered.length) {
-    showNoDataMessage("Try another area, strategy, date range, or contract selection.");
+    showNoDataMessage("Try another area, strategy, date range, date type, or contract selection.");
     return;
   }
 
@@ -746,6 +764,10 @@ function render() {
 byId("area")?.addEventListener("change", updateContracts);
 byId("rule")?.addEventListener("change", updateContracts);
 byId("direction")?.addEventListener("change", render);
+byId("dateMode")?.addEventListener("change", () => {
+  updateDateInputs();
+  updateContracts();
+});
 byId("startDate")?.addEventListener("change", updateContracts);
 byId("endDate")?.addEventListener("change", updateContracts);
 
