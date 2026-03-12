@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="advanced-bess-optimizer.css">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
 <body>
   <header class="hero">
@@ -150,6 +151,30 @@
 
       <div id="optimizerResult" class="optimizer-placeholder">
         No optimization run yet.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Charts</h2>
+        <p>Historical performance view of the recommended strategy.</p>
+      </div>
+
+      <div class="optimizer-grid">
+        <div id="optimizerDailyPnL"></div>
+        <div id="optimizerCumulativePnL"></div>
+        <div id="optimizerSocTrace"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Daily Summary</h2>
+        <p>Per-day performance and utilization of the recommended strategy.</p>
+      </div>
+
+      <div id="optimizerDailySummary" class="optimizer-placeholder">
+        No daily summary yet.
       </div>
     </section>
   </main>
