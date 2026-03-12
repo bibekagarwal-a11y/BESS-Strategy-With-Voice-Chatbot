@@ -23,6 +23,30 @@ body {
     linear-gradient(180deg, #0b1020 0%, #0f172a 55%, #132043 100%);
   min-height: 100vh;
 }
+.top-nav {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 18px 20px 0;
+}
+
+.top-nav-link {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: white;
+  font-weight: 700;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+  transition: 0.2s ease;
+}
+
+.top-nav-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+
 
 .hero {
   max-width: 1280px;
