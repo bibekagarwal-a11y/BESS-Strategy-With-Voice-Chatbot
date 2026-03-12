@@ -234,32 +234,41 @@ function renderMetricCards(filtered) {
   const profits = filtered.map(x => Number(x.profit));
   const total = profits.reduce((a, b) => a + b, 0);
   const avg = profits.length ? total / profits.length : 0;
-  const winRate = profits.length ? (profits.filter(x => x > 0).length / profits.length) * 100 : 0;
+  const winRate = profits.length
+    ? (profits.filter(x => x > 0).length / profits.length) * 100
+    : 0;
 
-  const best = filtered.length ? [...filtered].sort((a, b) => b.profit - a.profit)[0] : null;
-  const worst = filtered.length ? [...filtered].sort((a, b) => a.profit - b.profit)[0] : null;
+  const best = filtered.length
+    ? [...filtered].sort((a, b) => b.profit - a.profit)[0]
+    : null;
 
-  document.getElementById("profit").innerText = `${total.toFixed(2)} €/MWh`;
-  document.getElementById("contractCount").innerText = `${filtered.length}`;
-  document.getElementById("avgProfit").innerText = `${avg.toFixed(2)} €/MWh`;
-  document.getElementById("winRate").innerText = `${winRate.toFixed(1)}%`;
+  const worst = filtered.length
+    ? [...filtered].sort((a, b) => a.profit - b.profit)[0]
+    : null;
 
-const bestEl = document.getElementById("bestContract");
-const worstEl = document.getElementById("worstContract");
+  const profitEl = document.getElementById("profit");
+  const contractCountEl = document.getElementById("contractCount");
+  const avgProfitEl = document.getElementById("avgProfit");
+  const winRateEl = document.getElementById("winRate");
+  const bestEl = document.getElementById("bestContract");
+  const worstEl = document.getElementById("worstContract");
 
-const bestEl = document.getElementById("bestContract");
-const worstEl = document.getElementById("worstContract");
+  if (profitEl) profitEl.innerText = `${total.toFixed(2)} €/MWh`;
+  if (contractCountEl) contractCountEl.innerText = `${filtered.length}`;
+  if (avgProfitEl) avgProfitEl.innerText = `${avg.toFixed(2)} €/MWh`;
+  if (winRateEl) winRateEl.innerText = `${winRate.toFixed(1)}%`;
 
-if (bestEl) {
-  bestEl.innerHTML = best
-    ? `${best.date}<br>${best.contract}<br>${Number(best.profit).toFixed(2)} €/MWh`
-    : "-";
-}
+  if (bestEl) {
+    bestEl.innerHTML = best
+      ? `${best.date}<br>${best.contract}<br>${Number(best.profit).toFixed(2)} €/MWh`
+      : "-";
+  }
 
-if (worstEl) {
-  worstEl.innerHTML = worst
-    ? `${worst.date}<br>${worst.contract}<br>${Number(worst.profit).toFixed(2)} €/MWh`
-    : "-";
+  if (worstEl) {
+    worstEl.innerHTML = worst
+      ? `${worst.date}<br>${worst.contract}<br>${Number(worst.profit).toFixed(2)} €/MWh`
+      : "-";
+  }
 }
 
 function renderBessStrategy(filtered) {
