@@ -7,7 +7,6 @@ DATA_DIR = Path("data")
 OUT_DIR = Path("docs/data")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Scheduler run date in UTC, used so the UI can filter by the day the workflow ran.
 RUN_DATE = datetime.now(timezone.utc).date().isoformat()
 
 
@@ -54,16 +53,16 @@ def normalize(df, market_name):
     date_col = find_first(out, ["date_cet", "date"])
 
     if start_col:
-      out["start"] = pd.to_datetime(out[start_col], errors="coerce")
+        out["start"] = pd.to_datetime(out[start_col], errors="coerce")
     else:
-      out["start"] = pd.NaT
+        out["start"] = pd.NaT
 
     if end_col:
-      out["end"] = pd.to_datetime(out[end_col], errors="coerce")
+        out["end"] = pd.to_datetime(out[end_col], errors="coerce")
     elif start_col:
-      out["end"] = out["start"] + pd.Timedelta(minutes=15)
+        out["end"] = out["start"] + pd.Timedelta(minutes=15)
     else:
-      out["end"] = pd.NaT
+        out["end"] = pd.NaT
 
     if start_col:
         out["date"] = out["start"].dt.date.astype(str)
@@ -78,7 +77,6 @@ def normalize(df, market_name):
         out["contract"] = out["row_num"].apply(lambda x: f"Q{x:02d}")
         out["contract_sort"] = out["row_num"]
 
-    # Add scheduler run date so the UI can filter by "the run from 11 March"
     out["run_date"] = RUN_DATE
 
     return out[
@@ -132,7 +130,6 @@ def expand_to_quarters(df):
     return pd.DataFrame(rows)
 
 
-# Load datasets
 market_frames = {
     "DA": normalize(load_csv("dayahead_prices.csv"), "DA"),
     "IDA1": normalize(load_csv("ida1_prices.csv"), "IDA1"),
@@ -141,7 +138,6 @@ market_frames = {
     "VWAP": normalize(load_csv("intraday_continuous_vwap_qh.csv"), "VWAP"),
 }
 
-# Expand longer contracts (especially DA hourly) into quarter-hours
 for key in list(market_frames.keys()):
     market_frames[key] = expand_to_quarters(market_frames[key])
 
@@ -151,13 +147,11 @@ if not available_markets:
 
 base = pd.concat([market_frames[k] for k in available_markets], ignore_index=True)
 
-# Clean up merge keys to reduce avoidable mismatches
 base["date"] = base["date"].astype(str).str.strip()
 base["run_date"] = base["run_date"].astype(str).str.strip()
 base["area"] = base["area"].astype(str).str.strip()
 base["contract"] = base["contract"].astype(str).str.strip()
 
-# Build every unordered pair once; UI direction selector will handle forward/reverse
 pairs = list(combinations(available_markets, 2))
 
 profit_rows = []
@@ -233,9 +227,7 @@ if not profit_rows:
     json_path.write_text("[]", encoding="utf-8")
     print(f"Wrote empty CSV: {csv_path}")
     print(f"Wrote empty JSON: {json_path}")
-    raise ValueError(
-        "No matched rows were created. Check date/area/contract alignment across files."
-    )
+    raise ValueError("No matched rows were created. Check date/area/contract alignment across files.")
 
 result = pd.concat(profit_rows, ignore_index=True).sort_values(
     ["run_date", "date", "area", "rule", "contract_sort", "contract"]
@@ -249,4 +241,3 @@ print(f"Wrote JSON: {json_path}")
 print(f"Rows written: {len(result)}")
 print(f"Run date written: {RUN_DATE}")
 print(f"Rules generated: {sorted(result['rule'].unique().tolist())}")
-print(f"Market dates generated: {sorted(result['date'].unique().tolist())[:5]} ...")
