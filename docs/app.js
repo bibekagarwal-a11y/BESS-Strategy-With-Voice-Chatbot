@@ -247,20 +247,19 @@ function renderMetricCards(filtered) {
 const bestEl = document.getElementById("bestContract");
 const worstEl = document.getElementById("worstContract");
 
+const bestEl = document.getElementById("bestContract");
+const worstEl = document.getElementById("worstContract");
+
 if (bestEl) {
-  if (best) {
-    bestEl.innerHTML = `${best.date}<br>${best.contract}<br>${Number(best.profit).toFixed(2)} €/MWh`;
-  } else {
-    bestEl.innerText = "-";
-  }
+  bestEl.innerHTML = best
+    ? `${best.date}<br>${best.contract}<br>${Number(best.profit).toFixed(2)} €/MWh`
+    : "-";
 }
 
 if (worstEl) {
-  if (worst) {
-    worstEl.innerHTML = `${worst.date}<br>${worst.contract}<br>${Number(worst.profit).toFixed(2)} €/MWh`;
-  } else {
-    worstEl.innerText = "-";
-  }
+  worstEl.innerHTML = worst
+    ? `${worst.date}<br>${worst.contract}<br>${Number(worst.profit).toFixed(2)} €/MWh`
+    : "-";
 }
 
 function renderBessStrategy(filtered) {
