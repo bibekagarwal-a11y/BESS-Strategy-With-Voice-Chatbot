@@ -1,16 +1,16 @@
 let optimizerData = [];
 
 const RULE_LABELS = {
-  DA_IDA1: "Day Ahead ↔ IDA1",
-  DA_IDA2: "Day Ahead ↔ IDA2",
-  DA_IDA3: "Day Ahead ↔ IDA3",
-  DA_VWAP: "Day Ahead ↔ Intraday VWAP",
-  IDA1_IDA2: "IDA1 ↔ IDA2",
-  IDA1_IDA3: "IDA1 ↔ IDA3",
-  IDA1_VWAP: "IDA1 ↔ Intraday VWAP",
-  IDA2_IDA3: "IDA2 ↔ IDA3",
-  IDA2_VWAP: "IDA2 ↔ Intraday VWAP",
-  IDA3_VWAP: "IDA3 ↔ Intraday VWAP",
+  DA_IDA1: "Day Ahead â IDA1",
+  DA_IDA2: "Day Ahead â IDA2",
+  DA_IDA3: "Day Ahead â IDA3",
+  DA_VWAP: "Day Ahead â Intraday VWAP",
+  IDA1_IDA2: "IDA1 â IDA2",
+  IDA1_IDA3: "IDA1 â IDA3",
+  IDA1_VWAP: "IDA1 â Intraday VWAP",
+  IDA2_IDA3: "IDA2 â IDA3",
+  IDA2_VWAP: "IDA2 â Intraday VWAP",
+  IDA3_VWAP: "IDA3 â Intraday VWAP",
 };
 
 function byId(id) {
@@ -89,7 +89,7 @@ function buildDatasetSummary() {
       Rows: ${optimizerData.length}<br />
       Areas: ${escapeHtml(areas.join(", ") || "-")}<br />
       Historical market pairs: ${rules.length}<br />
-      Date range: ${escapeHtml(dates[0] || "-")} → ${escapeHtml(dates[dates.length - 1] || "-")}
+      Date range: ${escapeHtml(dates[0] || "-")} â ${escapeHtml(dates[dates.length - 1] || "-")}
     </div>
   `;
 }
@@ -120,7 +120,7 @@ function getMarketCosts() {
     bidAskSpread: Number(byId("bidAskSpreadEurMWh")?.value || 1.0),
     slippage: Number(byId("slippagePercent")?.value || 0.5) / 100,
     wearCost: Number(byId("wearCostEurMWh")?.value || 2.0),
-    gateClosureHours: Number(byId("gateClosureHoursInput")?.value || 1),
+    gateClosureHours: Number(byId("gateClosureHoursInput")?.value || 0),
     lotSizeMw: Number(byId("lotSizeMwInput")?.value || 0.1),
   };
 }
@@ -147,7 +147,7 @@ function validateInputs(inputs) {
   if (!optimizerData.length) return "No historical dataset is loaded.";
   if (inputs.powerMw <= 0) return "BESS MW must be greater than 0.";
   if (inputs.capacityMWh <= 0) return "BESS MWh must be greater than 0.";
-  if (inputs.efficiency <= 0 || inputs.efficiency > 1) return "η must be between 0 and 1.";
+  if (inputs.efficiency <= 0 || inputs.efficiency > 1) return "Î· must be between 0 and 1.";
   if (inputs.minSoc < 0 || inputs.minSoc > 100) return "Min SoC must be between 0 and 100.";
   if (inputs.maxSoc < 0 || inputs.maxSoc > 100) return "Max SoC must be between 0 and 100.";
   if (inputs.minSoc >= inputs.maxSoc) return "Min SoC must be lower than Max SoC.";
@@ -201,6 +201,37 @@ function parseContractHours(contractLabel) {
   if (endMins < startMins) endMins += 24 * 60;
 
   return (endMins - startMins) / 60;
+}
+
+/**
+ * Real Nord Pool / EPEX gate closure rules (factual market constraints):
+ *
+ *  DA Auction    â D-1 at 12:00 CET â covers all 24 delivery hours for day D
+ *  IDA1 Auction  â D-1 at 15:00 CET â covers all 24 delivery hours for day D
+ *  IDA2 Auction  â D-1 at 22:00 CET â covers all 24 delivery hours for day D
+ *  IDA3 Auction  â D    at 10:00 CET â covers ONLY delivery hours 12:00â24:00 (hours â¥ 12)
+ *  Continuous    â 5 minutes before contract start (e.g. 11:55 for 12:00â12:15)
+ *
+ * In backtesting all DA/IDA1/IDA2 prices are always accessible.
+ * The one hard filter that removes real opportunities:
+ *   IDA3 contracts with delivery starting before 12:00 are simply not tradeable via IDA3.
+ *
+ * Returns false if the row cannot be traded given real market gate closure rules.
+ */
+function isContractEligibleByMarketGate(row) {
+  const rule = String(row.rule || "").toUpperCase();
+  const contract = String(row.contract || "");
+
+  // IDA3 auction only covers delivery hours 12:00â24:00
+  if (rule.includes("IDA3")) {
+    const startStr = contract.split("-")[0]; // e.g. "09:00"
+    const startHour = parseInt((startStr || "0").split(":")[0], 10);
+    if (Number.isFinite(startHour) && startHour < 12) {
+      return false; // IDA3 gate (D 10:00) does not cover hours before 12:00
+    }
+  }
+
+  return true;
 }
 
 function buildCandidateStrategies(mode) {
@@ -270,8 +301,13 @@ function runSingleBacktest(rows, inputs, candidate, rule, costs) {
 
     const durationH = parseContractHours(row.contract);
 
-    // Gate closure check: skip contracts where durationH <= gateClosureHours
-    if (durationH <= costs.gateClosureHours) {
+    // Gate closure check 1: user-configured duration filter
+    if (durationH < costs.gateClosureHours) {
+      return;
+    }
+
+    // Gate closure check 2: real Nord Pool market rules (IDA3 â¥ 12:00 only, etc.)
+    if (!isContractEligibleByMarketGate(row)) {
       return;
     }
 
@@ -320,7 +356,7 @@ function runSingleBacktest(rows, inputs, candidate, rule, costs) {
 
       if (chargeRaw > 0) {
         const adjustedBuyPrice = buyPrice * (1 + costs.slippage) + costs.bidAskSpread / 2;
-        const actionCosts = chargeRaw * costs.transactionCost + chargeRaw * costs.wearCost;
+    2   const actionCosts = chargeRaw * costs.transactionCost + chargeRaw * costs.wearCost;
 
         soc += chargeRaw * eta;
         chargedTodayRaw += chargeRaw;
@@ -436,6 +472,8 @@ function runPerfectForesightBacktest(rows, inputs, costs) {
   let currentDate = null;
   let chargedTodayRaw = 0;
 
+  const actions = [];
+
   rows.forEach((row) => {
     const date = String(row.date);
 
@@ -446,8 +484,13 @@ function runPerfectForesightBacktest(rows, inputs, costs) {
 
     const durationH = parseContractHours(row.contract);
 
-    // Gate closure check
-    if (durationH <= costs.gateClosureHours) {
+    // Gate closure check 1: user-configured duration filter
+    if (durationH < costs.gateClosureHours) {
+      return;
+    }
+
+    // Gate closure check 2: real Nord Pool market rules
+    if (!isContractEligibleByMarketGate(row)) {
       return;
     }
 
@@ -517,6 +560,17 @@ function runPerfectForesightBacktest(rows, inputs, costs) {
         energyRaw = dischargeRaw;
       }
     }
+
+    actions.push({
+      date: row.date,
+      contract: row.contract,
+      action,
+      buy_price: buyPrice,
+      sell_price: sellPrice,
+      energy_raw_mwh: energyRaw,
+      pnl_delta: pnlDelta,
+      soc_after: soc,
+    });
   });
 
   return {
@@ -524,6 +578,7 @@ function runPerfectForesightBacktest(rows, inputs, costs) {
     chargeEnergyRaw,
     dischargeEnergyRaw,
     endingSoc: soc,
+    actions,
   };
 }
 
@@ -543,6 +598,7 @@ function runForecastDrivenBacktest(rows, inputs, costs) {
 
   const historicalBuyPrices = [];
   const historicalSellPrices = [];
+  const actions = [];
 
   rows.forEach((row) => {
     const date = String(row.date);
@@ -554,8 +610,13 @@ function runForecastDrivenBacktest(rows, inputs, costs) {
 
     const durationH = parseContractHours(row.contract);
 
-    // Gate closure check
-    if (durationH <= costs.gateClosureHours) {
+    // Gate closure check 1: user-configured duration filter
+    if (durationH < costs.gateClosureHours) {
+      return;
+    }
+
+    // Gate closure check 2: real Nord Pool market rules
+    if (!isContractEligibleByMarketGate(row)) {
       return;
     }
 
@@ -643,6 +704,17 @@ function runForecastDrivenBacktest(rows, inputs, costs) {
       }
     }
 
+    actions.push({
+      date: row.date,
+      contract: row.contract,
+      action,
+      buy_price: buyPrice,
+      sell_price: sellPrice,
+      energy_raw_mwh: energyRaw,
+      pnl_delta: pnlDelta,
+      soc_after: soc,
+    });
+
     historicalBuyPrices.push(buyPrice);
     historicalSellPrices.push(sellPrice);
   });
@@ -652,7 +724,42 @@ function runForecastDrivenBacktest(rows, inputs, costs) {
     chargeEnergyRaw,
     dischargeEnergyRaw,
     endingSoc: soc,
+    actions,
   };
+}
+
+function summarizeDailyFromActions(actions) {
+  const map = new Map();
+
+  actions.forEach((a) => {
+    const key = a.date;
+
+    if (!map.has(key)) {
+      map.set(key, {
+        date: key,
+        pnl: 0,
+        chargeEnergy: 0,
+        dischargeEnergy: 0,
+        charges: 0,
+        discharges: 0,
+        lastSoc: a.soc_after,
+      });
+    }
+
+    const row = map.get(key);
+    row.pnl += a.pnl_delta;
+    row.lastSoc = a.soc_after;
+
+    if (a.action === "charge") {
+      row.chargeEnergy += a.energy_raw_mwh;
+      row.charges += 1;
+    } else if (a.action === "discharge") {
+      row.dischargeEnergy += a.energy_raw_mwh;
+      row.discharges += 1;
+    }
+  });
+
+  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function runOptimizerBacktest(trainRows, valRows, testRows, inputs) {
@@ -760,7 +867,7 @@ function renderActionTable(actions) {
             <th>Buy</th>
             <th>Sell</th>
             <th>Energy</th>
-            <th>P&amp;L Δ</th>
+            <th>P&amp;L Î</th>
             <th>SoC After</th>
           </tr>
         </thead>
@@ -785,7 +892,7 @@ function renderTopAlternatives(allResults) {
           <td>${escapeHtml(formatMode(r.candidate.mode))}</td>
           <td>${r.candidate.buyQ !== null ? `${(r.candidate.buyQ * 100).toFixed(0)}%` : "-"}</td>
           <td>${r.candidate.sellQ !== null ? `${(r.candidate.sellQ * 100).toFixed(0)}%` : "-"}</td>
-          <td>${formatNumber(r.totalPnL)} €</td>
+          <td>${formatNumber(r.totalPnL)} â¬</td>
         </tr>
       `
     )
@@ -907,7 +1014,7 @@ function renderStrategyComparison(run) {
       trainPnL: run.trainPnL || 0,
       valPnL: run.valResult?.totalPnL || 0,
       testPnL: quantileTestPnL,
-      captureRatio: 100,
+      captureRatio,
     },
     {
       strategy: "Perfect Foresight",
@@ -930,9 +1037,9 @@ function renderStrategyComparison(run) {
       (r) => `
         <tr>
           <td>${escapeHtml(r.strategy)}</td>
-          <td>${formatNumber(r.trainPnL)} €</td>
-          <td>${formatNumber(r.valPnL)} €</td>
-          <td>${formatNumber(r.testPnL)} €</td>
+          <td>${formatNumber(r.trainPnL)} â¬</td>
+          <td>${formatNumber(r.valPnL)} â¬</td>
+          <td>${formatNumber(r.testPnL)} â¬</td>
           <td>${formatNumber(r.captureRatio)} %</td>
         </tr>
       `
@@ -975,26 +1082,13 @@ function renderOptimizerCharts(run) {
   const stepLabels = bestResult.actions.map((a, i) => `${a.date} | ${a.contract} | ${i + 1}`);
   const socTrace = bestResult.actions.map((a) => a.soc_after);
 
-  // Cumulative P&L for all 3 strategies
-  const testRowsDates = [...new Set(run.testResult.actions.map((a) => a.date))].sort();
-
-  const quantileCumulative = [];
-  let quantileAcc = 0;
-  dailyRows.forEach((r) => {
-    quantileAcc += r.pnl;
-    quantileCumulative.push(quantileAcc);
-  });
-
-  const perfectForesightDailyMap = new Map();
-  const perfectForesightRows = run.perfectForesight ? run.testResult.actions : [];
-  // For perfect foresight, we'd need to recalculate, so approximate with P&L
-  const perfectForesightCumulative = [];
-  let pfAcc = run.perfectForesight?.totalPnL || 0;
-  perfectForesightCumulative.push(pfAcc);
-
-  const forecastDrivenCumulative = [];
-  let fdAcc = run.forecastDrivenTest?.totalPnL || 0;
-  forecastDrivenCumulative.push(fdAcc);
+  // Get min/max SoC
+  const minSocMWh = bestResult.actions.length > 0
+    ? Math.min(...bestResult.actions.map((a) => a.soc_after))
+    : 0;
+  const maxSocMWh = bestResult.actions.length > 0
+    ? Math.max(...bestResult.actions.map((a) => a.soc_after))
+    : 0;
 
   // Daily P&L bar chart
   Plotly.newPlot(
@@ -1004,7 +1098,7 @@ function renderOptimizerCharts(run) {
         x: dailyDates,
         y: dailyPnL,
         type: "bar",
-        hovertemplate: "Date: %{x}<br>Daily P&L: %{y:.2f} €<extra></extra>",
+        hovertemplate: "Date: %{x}<br>Daily P&L: %{y:.2f} â¬<extra></extra>",
       },
     ],
     {
@@ -1013,60 +1107,112 @@ function renderOptimizerCharts(run) {
       paper_bgcolor: "white",
       plot_bgcolor: "white",
       xaxis: { title: "Date", tickangle: -45, automargin: true },
-      yaxis: { title: "P&L (€)", gridcolor: "#eaecf0", automargin: true },
+      yaxis: { title: "P&L (â¬)", gridcolor: "#eaecf0", automargin: true },
     },
     { responsive: true, displayModeBar: false }
   );
 
   // Cumulative P&L comparison
+  const quantileCumulative = [];
+  let quantileAcc = 0;
+  dailyRows.forEach((r) => {
+    quantileAcc += r.pnl;
+    quantileCumulative.push(quantileAcc);
+  });
+
+  const pfDailyRows = run.perfectForesight && run.perfectForesight.actions
+    ? summarizeDailyFromActions(run.perfectForesight.actions)
+    : [];
+  const pfCumulative = [];
+  let pfAcc = 0;
+  pfDailyRows.forEach((r) => {
+    pfAcc += r.pnl;
+    pfCumulative.push(pfAcc);
+  });
+
+  const fdDailyRows = run.forecastDrivenTest && run.forecastDrivenTest.actions
+    ? summarizeDailyFromActions(run.forecastDrivenTest.actions)
+    : [];
+  const fdCumulative = [];
+  let fdAcc = 0;
+  fdDailyRows.forEach((r) => {
+    fdAcc += r.pnl;
+    fdCumulative.push(fdAcc);
+  });
+
+  const cumulativeTraces = [
+    {
+      x: dailyDates,
+      y: quantileCumulative,
+      mode: "lines+markers",
+      name: "Quantile Baseline",
+      hovertemplate: "Date: %{x}<br>Cumulative P&L: %{y:.2f} â¬<extra></extra>",
+    },
+  ];
+
+  if (pfDailyRows.length > 0) {
+    cumulativeTraces.push({
+      x: pfDailyRows.map((r) => r.date),
+      y: pfCumulative,
+      mode: "lines+markers",
+      name: "Perfect Foresight",
+      hovertemplate: "Date: %{x}<br>Cumulative P&L: %{y:.2f} â¬<extra></extra>",
+    });
+  }
+
+  if (fdDailyRows.length > 0) {
+    cumulativeTraces.push({
+      x: fdDailyRows.map((r) => r.date),
+      y: fdCumulative,
+      mode: "lines+markers",
+      name: "Forecast-Driven",
+      hovertemplate: "Date: %{x}<br>Cumulative P&L: %{y:.2f} â¬<extra></extra>",
+    });
+  }
+
   Plotly.newPlot(
     "optimizerCumulativePnL",
-    [
-      {
-        x: dailyDates,
-        y: quantileCumulative,
-        mode: "lines+markers",
-        name: "Quantile Baseline",
-        hovertemplate: "Date: %{x}<br>Cumulative P&L: %{y:.2f} €<extra></extra>",
-      },
-      {
-        x: ["Test Set"],
-        y: [run.perfectForesight?.totalPnL || 0],
-        mode: "markers",
-        name: "Perfect Foresight",
-        hovertemplate: "Perfect Foresight: %{y:.2f} €<extra></extra>",
-      },
-      {
-        x: ["Test Set"],
-        y: [run.forecastDrivenTest?.totalPnL || 0],
-        mode: "markers",
-        name: "Forecast-Driven",
-        hovertemplate: "Forecast-Driven: %{y:.2f} €<extra></extra>",
-      },
-    ],
+    cumulativeTraces,
     {
       title: "Cumulative P&L Comparison",
       margin: { l: 60, r: 20, t: 50, b: 90 },
       paper_bgcolor: "white",
       plot_bgcolor: "white",
       xaxis: { title: "Date", tickangle: -45, automargin: true },
-      yaxis: { title: "Cumulative (€)", gridcolor: "#eaecf0", automargin: true },
+      yaxis: { title: "Cumulative (â¬)", gridcolor: "#eaecf0", automargin: true },
     },
     { responsive: true, displayModeBar: false }
   );
 
-  // SoC trace
+  // SoC trace with min/max reference lines
+  const socTraces = [
+    {
+      x: stepLabels,
+      y: socTrace,
+      mode: "lines",
+      customdata: bestResult.actions.map((a) => `${a.date} | ${a.contract} | ${a.action}`),
+      hovertemplate: "%{customdata}<br>SoC: %{y:.2f} MWh<extra></extra>",
+      name: "SoC",
+    },
+    {
+      x: [stepLabels[0], stepLabels[stepLabels.length - 1]],
+      y: [minSocMWh, minSocMWh],
+      mode: "lines",
+      name: "Min SoC",
+      line: { color: "red", dash: "dash" },
+    },
+    {
+      x: [stepLabels[0], stepLabels[stepLabels.length - 1]],
+      y: [maxSocMWh, maxSocMWh],
+      mode: "lines",
+      name: "Max SoC",
+      line: { color: "green", dash: "dash" },
+    },
+  ];
+
   Plotly.newPlot(
     "optimizerSocTrace",
-    [
-      {
-        x: stepLabels,
-        y: socTrace,
-        mode: "lines",
-        customdata: bestResult.actions.map((a) => `${a.date} | ${a.contract} | ${a.action}`),
-        hovertemplate: "%{customdata}<br>SoC: %{y:.2f} MWh<extra></extra>",
-      },
-    ],
+    socTraces,
     {
       title: "SoC Trace (Test Set)",
       margin: { l: 60, r: 20, t: 50, b: 110 },
@@ -1078,11 +1224,185 @@ function renderOptimizerCharts(run) {
     { responsive: true, displayModeBar: false }
   );
 
+  // Price Signal Chart
+  if (run.testResult && run.testResult.actions && run.testResult.actions.length > 0) {
+    const priceActions = run.testResult.actions;
+    const stepIndices = priceActions.map((_, i) => i);
+
+    const chargeMarkers = [];
+    const dischargeMarkers = [];
+
+    priceActions.forEach((action, i) => {
+      if (action.action === "charge") {
+        chargeMarkers.push({ step: i, price: action.buy_price });
+      } else if (action.action === "discharge") {
+        dischargeMarkers.push({ step: i, price: action.sell_price });
+      }
+    });
+
+    const priceTraces = [
+      {
+        x: stepIndices,
+        y: priceActions.map((a) => a.buy_price),
+        mode: "lines",
+        name: "Buy Prices",
+        line: { color: "lightblue" },
+        hovertemplate: "Step %{x}<br>Buy: â¬%{y:.2f}<extra></extra>",
+      },
+      {
+        x: stepIndices,
+        y: priceActions.map((a) => a.sell_price),
+        mode: "lines",
+        name: "Sell Prices",
+        line: { color: "orange" },
+        hovertemplate: "Step %{x}<br>Sell: â¬%{y:.2f}<extra></extra>",
+      },
+    ];
+
+    if (chargeMarkers.length > 0) {
+      priceTraces.push({
+        x: chargeMarkers.map((m) => m.step),
+        y: chargeMarkers.map((m) => m.price),
+        mode: "markers",
+        name: "Charge",
+        marker: { symbol: "triangle-up", color: "green", size: 10 },
+        hovertemplate: "Charge at â¬%{y:.2f}<extra></extra>",
+      });
+    }
+
+    if (dischargeMarkers.length > 0) {
+      priceTraces.push({
+        x: dischargeMarkers.map((m) => m.step),
+        y: dischargeMarkers.map((m) => m.price),
+        mode: "markers",
+        name: "Discharge",
+        marker: { symbol: "triangle-down", color: "red", size: 10 },
+        hovertemplate: "Discharge at â¬%{y:.2f}<extra></extra>",
+      });
+    }
+
+    const priceEl = byId("optimizerPriceSignal");
+    if (priceEl) {
+      Plotly.newPlot(
+        "optimizerPriceSignal",
+        priceTraces,
+        {
+          title: "Price History with Trade Signals (Test Set)",
+          margin: { l: 60, r: 20, t: 50, b: 90 },
+          paper_bgcolor: "white",
+          plot_bgcolor: "white",
+          xaxis: { title: "Step", showticklabels: false, automargin: true },
+          yaxis: { title: "Price (â¬/MWh)", gridcolor: "#eaecf0", automargin: true },
+        },
+        { responsive: true, displayModeBar: false }
+      );
+    }
+  }
+
+  // Strategy P&L by Phase Bar Chart
+  const strategyBarEl = byId("optimizerStrategyBars");
+  if (strategyBarEl && run.testResult) {
+    const strategies = ["Quantile Baseline", "Perfect Foresight", "Forecast-Driven"];
+    const trainPnLs = [
+      run.trainPnL || 0,
+      0,
+      run.forecastDrivenTrain?.totalPnL || 0,
+    ];
+    const valPnLs = [
+      run.valResult?.totalPnL || 0,
+      0,
+      run.forecastDrivenVal?.totalPnL || 0,
+    ];
+    const testPnLs = [
+      run.testResult.totalPnL,
+      run.perfectForesight?.totalPnL || 0,
+      run.forecastDrivenTest?.totalPnL || 0,
+    ];
+
+    const strategyBarTraces = [
+      {
+        x: strategies,
+        y: trainPnLs,
+        name: "Train P&L",
+        type: "bar",
+      },
+      {
+        x: strategies,
+        y: valPnLs,
+        name: "Val P&L",
+        type: "bar",
+      },
+      {
+        x: strategies,
+        y: testPnLs,
+        name: "Test P&L",
+        type: "bar",
+      },
+    ];
+
+    Plotly.newPlot(
+      "optimizerStrategyBars",
+      strategyBarTraces,
+      {
+        title: "Strategy P&L by Phase (â¬)",
+        barmode: "group",
+        margin: { l: 60, r: 20, t: 50, b: 90 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        xaxis: { title: "Strategy" },
+        yaxis: { title: "P&L (â¬)", gridcolor: "#eaecf0" },
+      },
+      { responsive: true, displayModeBar: false }
+    );
+  }
+
+  // Capture Ratio Bar Chart
+  const captureRatioEl = byId("optimizerCaptureRatio");
+  if (captureRatioEl && run.testResult && run.perfectForesight) {
+    const perfectForesightTestPnL = run.perfectForesight.totalPnL;
+
+    const quantileCR = perfectForesightTestPnL !== 0
+      ? (run.testResult.totalPnL / perfectForesightTestPnL) * 100
+      : 0;
+    const forecastCR = perfectForesightTestPnL !== 0
+      ? (run.forecastDrivenTest?.totalPnL || 0) / perfectForesightTestPnL * 100
+      : 0;
+
+    const captureRatioTraces = [
+      {
+        y: ["Quantile Baseline", "Forecast-Driven", "Perfect Foresight"],
+        x: [quantileCR, forecastCR, 100],
+        type: "bar",
+        orientation: "h",
+        marker: {
+          color: [
+            quantileCR >= 60 ? "green" : quantileCR >= 30 ? "yellow" : "red",
+            forecastCR >= 60 ? "green" : forecastCR >= 30 ? "yellow" : "red",
+            "blue",
+          ],
+        },
+      },
+    ];
+
+    Plotly.newPlot(
+      "optimizerCaptureRatio",
+      captureRatioTraces,
+      {
+        title: "Capture Ratio vs Perfect Foresight (%)",
+        margin: { l: 150, r: 20, t: 50, b: 50 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        xaxis: { title: "Capture Ratio (%)", gridcolor: "#eaecf0" },
+      },
+      { responsive: true, displayModeBar: false }
+    );
+  }
+
   renderDailySummaryTable(dailyRows);
 }
 
 function clearOptimizerCharts() {
-  ["optimizerDailyPnL", "optimizerCumulativePnL", "optimizerSocTrace"].forEach((id) => {
+  ["optimizerDailyPnL", "optimizerCumulativePnL", "optimizerSocTrace", "optimizerPriceSignal", "optimizerStrategyBars", "optimizerCaptureRatio"].forEach((id) => {
     const el = byId(id);
     if (!el || typeof Plotly === "undefined") return;
 
@@ -1127,7 +1447,7 @@ function renderBacktestResult(inputs, scopedRows, run) {
       ? `Best pair: ${RULE_LABELS[best.rule] || best.rule}. Charge when buy price is in the lowest ${(best.candidate.buyQ * 100).toFixed(0)}% of prior history for this pair.`
       : inputs.strategyMode === "discharge_only"
       ? `Best pair: ${RULE_LABELS[best.rule] || best.rule}. Discharge when sell price is in the highest ${(100 - best.candidate.sellQ * 100).toFixed(0)}% tail of prior history for this pair.`
-      : `Best pair: ${RULE_LABELS[best.rule] || best.rule}. Charge below ${best.buyThreshold?.toFixed(2) ?? "-"} €/MWh and discharge above ${best.sellThreshold?.toFixed(2) ?? "-"} €/MWh using walk-forward thresholds.`;
+      : `Best pair: ${RULE_LABELS[best.rule] || best.rule}. Charge below ${best.buyThreshold?.toFixed(2) ?? "-"} â¬/MWh and discharge above ${best.sellThreshold?.toFixed(2) ?? "-"} â¬/MWh using walk-forward thresholds.`;
 
   const trainPnL = run.trainResults.length > 0 ? run.trainResults[0].totalPnL : 0;
   const valPnL = run.valResult?.totalPnL || 0;
@@ -1139,14 +1459,14 @@ function renderBacktestResult(inputs, scopedRows, run) {
       <p><strong>Mode:</strong> ${escapeHtml(formatMode(inputs.strategyMode))}</p>
       <p><strong>Recommended market pair:</strong> ${escapeHtml(RULE_LABELS[best.rule] || best.rule)}</p>
       <p><strong>Markets selected:</strong> ${escapeHtml(inputs.markets.join(", "))}</p>
-      <p><strong>Scope:</strong> ${escapeHtml(inputs.area)} | ${escapeHtml(inputs.startDate)} → ${escapeHtml(inputs.endDate)}</p>
+      <p><strong>Scope:</strong> ${escapeHtml(inputs.area)} | ${escapeHtml(inputs.startDate)} â ${escapeHtml(inputs.endDate)}</p>
       <p><strong>Data split:</strong> 60% training, 20% validation, 20% out-of-sample test</p>
       <p>${escapeHtml(strategyNote)}</p>
       <p><strong>Scoped rows:</strong> ${scopedRows.length}</p>
       <p><strong>Eligible market pairs:</strong> ${run.eligibleRules.length}</p>
-      <p><strong>Training P&L:</strong> ${formatNumber(trainPnL)} €</p>
-      <p><strong>Validation P&L:</strong> ${formatNumber(valPnL)} €</p>
-      <p><strong>Test P&L (out-of-sample):</strong> ${formatNumber(testPnL)} €</p>
+      <p><strong>Training P&L:</strong> ${formatNumber(trainPnL)} â¬</p>
+      <p><strong>Validation P&L:</strong> ${formatNumber(valPnL)} â¬</p>
+      <p><strong>Test P&L (out-of-sample):</strong> ${formatNumber(testPnL)} â¬</p>
       <p><strong>Charge actions:</strong> ${best.chargeActions}</p>
       <p><strong>Discharge actions:</strong> ${best.dischargeActions}</p>
       <p><strong>Charged energy:</strong> ${formatNumber(best.chargeEnergyRaw)} MWh</p>
@@ -1210,4 +1530,4 @@ byId("runOptimizerBtn")?.addEventListener("click", handleRunOptimizer);
 
 loadOptimizerData();
 clearOptimizerCharts();
-console.log("Advanced BESS Optimizer loaded with 3-phase backtest and market cost simulation.");
+console.log("Advanced BESS Optimizer v2 loaded â 3-phase backtest, realistic market costs, real Nord Pool gate closure rules (IDA3 â¥12:00), and enhanced charting.");
