@@ -1575,6 +1575,1583 @@ function renderBidSuggestor(testData, qResult, fResult, fcResult, mp, windows) {
 updateSplitBar();
 </script>
 </body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced BESS Optimizer — Honest Backtesting v2</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-card: #161b27;
+      --bg-card2: #1c2336;
+      --border: #2d3554;
+      --accent: #4f8ef7;
+      --train: #22c55e;
+      --val:   #f59e0b;
+      --test:  #3b82f6;
+      --quant: #a855f7;
+      --fore:  #ef4444;
+      --fcst:  #06b6d4;
+      --muted: #8892b0;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      background: var(--bg-primary);
+      color: #cdd6f4;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 0.9rem;
+    }
+    a { color: var(--accent); }
+    /* ── Navbar ── */
+    .navbar { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: .6rem 1.2rem; }
+    .navbar-brand { font-size: 1rem; font-weight: 600; color: #e2e8f0 !important; }
+    .badge-phase { font-size: .65rem; padding: 2px 6px; border-radius: 4px; font-weight: 500; }
+    /* ── Cards ── */
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+    .card-header {
+      background: var(--bg-card2);
+      border-bottom: 1px solid var(--border);
+      padding: .5rem .9rem;
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+    }
+    .card-body { padding: .8rem .9rem; }
+    /* ── Form controls ── */
+    label.form-label { font-size: .78rem; color: var(--muted); margin-bottom: 2px; }
+    .form-control, .form-select {
+      background: #0d1117; border: 1px solid var(--border);
+      color: #e2e8f0; font-size: .82rem; padding: .3rem .55rem;
+    }
+    .form-control:focus, .form-select:focus {
+      background: #0d1117; border-color: var(--accent); color: #e2e8f0;
+      box-shadow: 0 0 0 2px rgba(79,142,247,.25);
+    }
+    input[type=range] { accent-color: var(--accent); }
+    /* ── Buttons ── */
+    .btn-run {
+      background: var(--accent); color: #fff; border: none;
+      padding: .45rem 1.5rem; font-weight: 600; border-radius: 6px;
+      transition: background .2s;
+    }
+    .btn-run:hover { background: #3a7ce8; }
+    .btn-run:disabled { background: #3d4a6a; cursor: not-allowed; }
+    /* ── Progress bar ── */
+    .progress { height: 4px; background: var(--bg-card2); border-radius: 2px; }
+    .progress-bar { background: var(--accent); border-radius: 2px; transition: width .25s; }
+    /* ── Metric cards ── */
+    .metric-card {
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .65rem .85rem;
+      text-align: center;
+    }
+    .metric-label { font-size: .7rem; color: var(--muted); margin-bottom: 2px; }
+    .metric-value { font-size: 1.25rem; font-weight: 700; }
+    .metric-sub { font-size: .72rem; color: var(--muted); }
+    /* ── Data-split timeline ── */
+    .split-bar { height: 18px; border-radius: 4px; overflow: hidden; display: flex; }
+    .split-seg { display: flex; align-items: center; justify-content: center;
+                 font-size: .65rem; font-weight: 600; color: #fff; }
+    /* ── Chart containers ── */
+    .chart-wrap { position: relative; width: 100%; }
+    /* ── Nav tabs ── */
+    .nav-tabs { border-bottom: 1px solid var(--border); }
+    .nav-tabs .nav-link {
+      color: var(--muted); font-size: .8rem; border: none;
+      border-bottom: 2px solid transparent; padding: .4rem .7rem;
+    }
+    .nav-tabs .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); background: transparent; }
+    .nav-tabs .nav-link:hover { color: #e2e8f0; }
+    /* ── Walk-forward table ── */
+    .wf-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .wf-table th { color: var(--muted); font-weight: 500; padding: .3rem .5rem;
+                   border-bottom: 1px solid var(--border); text-align: left; }
+    .wf-table td { padding: .28rem .5rem; border-bottom: 1px solid rgba(45,53,84,.5); }
+    .wf-table tr:last-child td { border-bottom: none; }
+    .text-pos { color: #22c55e; }
+    .text-neg { color: #ef4444; }
+    /* ── Legend dots ── */
+    .leg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+    /* ── Upload area ── */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px; padding: 1.2rem;
+      text-align: center; cursor: pointer;
+      transition: border-color .2s;
+    }
+    .upload-zone:hover { border-color: var(--accent); }
+    .upload-zone input[type=file] { display: none; }
+    /* ── Strategy description ── */
+    .phase-badge {
+      display: inline-block;
+      font-size: .65rem; font-weight: 600; padding: 2px 7px;
+      border-radius: 10px; margin-right: 4px;
+    }
+    .ph1 { background: rgba(34,197,94,.15); color: #22c55e; }
+    .ph2 { background: rgba(245,158,11,.15); color: #f59e0b; }
+    .ph3 { background: rgba(79,142,247,.15); color: var(--accent); }
+    /* ── tooltip ── */
+    [data-tip] { cursor: help; border-bottom: 1px dashed var(--muted); }
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Navbar ─────────────────────────────────────────────────────────── -->
+<nav class="navbar d-flex align-items-center gap-3">
+  <span class="navbar-brand">⚡ BESS Optimizer</span>
+  <span class="phase-badge ph1">Phase 1: Honest Backtest</span>
+  <span class="phase-badge ph2">Phase 2: Realistic Market Sim</span>
+  <span class="phase-badge ph3">Phase 3: Three-Strategy Compare</span>
+  <span class="ms-auto text-muted" style="font-size:.t5rem">Nord Pool / EPEX DA Simulation</span>
+</nav>
+
+<!-- ── Main grid ──────────────────────────────────────────────────────── -->
+<div class="container-fluid px-3 py-3">
+  <div class="row g-3">
+
+    <!-- ── LEFT: Config ──────────────────────────────────────────────── -->
+    <div class="col-12 col-xl-3">
+
+      <!-- Data source -->
+      <div class="card mb-3">
+        <div class="card-header">Data Source</div>
+        <div class="card-body">
+          <div class="mb-2">
+            <label class="form-label">Market Dataset</label>
+            <select class="form-select" id="dataSource">
+              <option value="repoDayAhead" selected>📡 Live Repo — Day-Ahead (real Nord Pool)</option>
+              <option value="synth2yr">Synthetic Nord Pool (2 yr, 2022-2023)</option>
+              <option value="synth1yr">Synthetic Nord Pool (1 yr)</option>
+              <option value="upload">Upload CSV…</option>
+            </select>
+          </div>
+          <!-- Repo area picker -->
+          <div id="repoZone" class="mb-2">
+            <label class="form-label" style="font-size:.8rem">Bidding Zone</label>
+            <select class="form-select form-select-sm" id="repoArea">
+              <option value="GER">GER (Germany)</option>
+              <option value="AT">AT (Austria)</option>
+              <option value="FR">FR (France)</option>
+              <option value="BE">BE (Belgium)</option>
+              <option value="NL">NL (Netherlands)</option>
+            </select>
+            <div id="repoStatus" class="mt-1" style="font-size:.74rem;color:var(--muted)">Will fetch on Run ▶</div>
+          </div>
+          <!-- CSV upload zone -->
+          <div id="uploadZone" class="upload-zone d-none" onclick="document.getElementById('csvInput').click()">
+            <input type="file" id="csvInput" accept=".csv" />
+            <div style="font-size:.8rem;color:var(--muted)">
+              Click to upload CSV<br/>
+              <span style="font-size:.7rem">Columns: timestamp, price_eur_mwh</span>
+            </div>
+          </div>
+          <div id="dataStatus" class="mt-2" style="font-size:.76rem;color:var(--muted)">
+            17 520 hourly observations (2022-01-01 → 2023-12-31)
+          </div>
+        </div>
+      </div>
+
+      <!-- BESS parameters -->
+      <div class="card mb-3">
+        <div class="card-header">🔋 Battery Parameters</div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label" data-tip="Usable energy capacity">Capacity (MWh)</label>
+              <input type="number" class="form-control" id="capacityMWh" value="2.0" step="0.5" min="0.1" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" data-tip="Max charge / discharge power">Power (MW)</label>
+              <input type="number" class="form-control" id="powerMW" value="1.0" step="0.25" min="0.1" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" data-tip="One-way charge efficiency (%)">Charge Eff (%)</label>
+              <input type="number" class="form-control" id="chargeEff" value="95" step="1" min="50" max="100" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" data-tip="One-way discharge efficiency (%)">Discharge Eff (%)</label>
+              <input type="number" class="form-control" id="dischargeEff" value="95" step="1" min="50" max="100" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Initial SOC (MWh): <span id="socLabel">0.0</span></label>
+              <input type="range" class="form-range" id="initialSOC" min="0" max="2" step="0.1" value="0"
+                     oninput="document.getElementById('socLabel').textContent=parseFloat(this.value).toFixed(1)" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Market parameters (Phase 2) -->
+      <div class="card mb-3">
+        <div class="card-header">📊 Market Parameters <span class="phase-badge ph2">Phase 2</span></div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label" data-tip="Per-trade cost applied to each MWh traded">Tx Cost (€/MWh)</label>
+              <input type="number" class="form-control" id="txCost" value="0.5" step="0.1" min="0" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" data-tip="Full bid/ask spread; half applied to each side">Bid-Ask (€/MWh)</label>
+              <input type="number" class="form-control" id="bidAsk" value="1.0" step="0.25" min="0" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" data-tip="Market impact / execution slippage in basis points">Slippage (bps)</label>
+              <input type="number" class="form-control" id="slippageBps" value="10" step="5" min="0" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" data-tip="Minimum tradeable lot; orders are rounded down">Lot Size (MW)</label>
+              <input type="number" class="form-control" id="lotSize" value="0.1" step="0.05" min="0.01" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" data-tip="Battery degradation cost per MWh of throughput">Wear Cost (€/MWh)</label>
+              <input type="number" class="form-control" id="wearCost" value="3.0" step="0.5" min="0" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" data-tip="Hours before delivery during which no new orders can be placed">Gate Closure (h)</label>
+              <input type="number" class="form-control" id="gateClosure" value="0" step="1" min="0" max="12" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backtest config (Phase 1) -->
+      <div class="card mb-3">
+        <div class="card-header">🔬 Backtest Config <span class="phase-badge ph1">Phase 1</span></div>
+        <div class="card-body">
+          <div class="row g-2 mb-2">
+            <div class="col-4">
+              <label class="form-label">Train (%)</label>
+              <input type="number" class="form-control" id="trainFrac" value="60" min="20" max="80" step="5"
+                     oninput="updateSplitBar()" />
+            </div>
+            <div class="col-4">
+              <label class="form-label">Val (%)</label>
+              <input type="number" class="form-control" id="valFrac" value="20" min="5" max="40" step="5"
+                     oninput="updateSplitBar()" />
+            </div>
+            <div class="col-4">
+              <label class="form-label">Test (%)</label>
+              <input type="number" class="form-control" id="testFracDisplay" value="20" readonly
+                     style="background:#0d1117;color:var(--muted)" />
+            </div>
+          </div>
+          <!-- Split visualiser -->
+          <div class="split-bar mb-3" id="splitBar">
+            <div class="split-seg" id="seg-train" style="background:var(--train);width:60%">Train</div>
+            <div class="split-seg" id="seg-val"   style="background:var(--val);width:20%">Val</div>
+            <div class="split-seg" id="seg-test"  style="background:var(--test);width:20%">Test</div>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label" data-tip="Rolling window of prior days used to optimize quantile thresholds">WF Window (days)</label>
+              <input type="number" class="form-control" id="wfWindow" value="60" min="7" max="180" step="7" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" data-tip="How often to re-optimize: each step evaluates this many days out-of-sample">WF Step (days)</label>
+              <input type="number" class="form-control" id="wfStep" value="7" min="1" max="30" step="1" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strategy config (Phase 3) -->
+      <div class="card mb-3">
+        <div class="card-header">⚙️ Strategy Config <span class="phase-badge ph3">Phase 3</span></div>
+        <div class="card-body">
+          <div class="mb-2" style="font-size:.76rem;color:var(--muted)">Quantile search grid</div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label">Buy Q min/max (%)</label>
+              <div class="d-flex gap-1">
+                <input type="number" class="form-control" id="buyQMin" value="5"  min="1"  max="49" step="5" />
+                <input type="number" class="form-control" id="buyQMax" value="40" min="10" max="49" step="5" />
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Sell Q min/max (%)</label>
+              <div class="d-flex gap-1">
+                <input type="number" class="form-control" id="sellQMin" value="60" min="51" max="99" step="5" />
+                <input type="number" class="form-control" id="sellQMax" value="95" min="51" max="99" step="5" />
+              </div>
+            </div>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label" data-tip="Days of history used to build the price forecast for next-day dispatch">Forecast Lookback (days)</label>
+              <input type="number" class="form-control" id="forecastLookback" value="14" min="3" max="90" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" data-tip="SOC discretization steps for DP — more = more accurate but slower">DP SOC Steps</label>
+              <input type="number" class="form-control" id="dpSteps" value="20" min="5" max="50" step="5" />
+            </div>
+          </div>
+          <div class="mt-2 d-flex gap-2">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="runQuantile" checked>
+              <label class="form-check-label" style="color:var(--quant);font-size:.78rem">Quantile</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="runForesight" checked>
+              <label class="form-check-label" style="color:var(--fore);font-size:.78rem">Perfect Foresight</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="runForecast" checked>
+              <label class="form-check-label" style="color:var(--fcst);font-size:.78rem">Forecast</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run button -->
+      <button class="btn btn-run w-100 mb-2" id="runBtn" onclick="runAll()">▶ Run Backtest</button>
+      <div class="progress mb-1" id="progressWrap" style="display:none">
+        <div class="progress-bar" id="progressBar" style="width:0%"></div>
+      </div>
+      <div id="statusMsg" style="font-size:.73rem;color:var(--muted);text-align:center"></div>
+    </div><!-- /left col -->
+
+    <!-- ── RIGHT: Results ─────────────────────────────────────────────── -->
+    <div class="col-12 col-xl-9">
+
+      <!-- Summary metrics row -->
+      <div class="row g-2 mb-3" id="metricsRow">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Quantile P&L</div>
+            <div class="metric-value text-pos" id="m-qpnl">—</div>
+            <div class="metric-sub" id="m-qpnl-sub">walk-forward</div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Foresight P&L</div>
+            <div class="metric-value" style="color:var(--fore)" id="m-fpnl">—</div>
+            <div class="metric-sub">upper bound</div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Forecast P&L</div>
+            <div class="metric-value" style="color:var(--fcst)" id="m-fcpnl">—</div>
+            <div class="metric-sub">out-of-sample</div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Q Capture Rate</div>
+            <div class="metric-value" id="m-qcap">—</div>
+            <div class="metric-sub">vs foresight</div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Q Sharpe</div>
+            <div class="metric-value" id="m-qsharpe">—</div>
+            <div class="metric-sub">daily P&L</div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Q Max Drawdown</div>
+            <div class="metric-value text-neg" id="m-qdd">—</div>
+            <div class="metric-sub">cumulative</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts + analysis tabs -->
+      <div class="card">
+        <div class="card-header d-flex align-items-center p-0">
+          <ul class="nav nav-tabs px-2 pt-1" id="resultsTabs">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-equity">Equity Curves</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-price">Price + Dispatch</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-wf">Walk-Forward</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-metrics">Metrics Table</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-price-hist">Price History</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-bid-suggest">⚡ Bid Suggestor</a></li>
+          </ul>
+        </div>
+        <div class="card-body p-2">
+          <div class="tab-content">
+
+            <!-- Equity curves -->
+            <div class="tab-pane fade show active" id="tab-equity">
+              <div class="d-flex align-items-center gap-3 mb-2" style="font-size:.75rem">
+                <span><span class="leg-dot" style="background:var(--quant)"></span>Quantile (WF)</span>
+                <span><span class="leg-dot" style="background:var(--fore)"></span>Perfect Foresight</span>
+                <span><span class="leg-dot" style="background:var(--fcst)"></span>Forecast-Driven</span>
+                <span class="ms-auto" style="color:var(--muted)">Test set only (out-of-sample)</span>
+              </div>
+              <div class="chart-wrap" style="height:340px">
+                <canvas id="chartEquity"></canvas>
+              </div>
+            </div>
+
+            <!-- Price + dispatch -->
+            <div class="tab-pane fade" id="tab-price">
+              <div class="d-flex align-items-center gap-2 mb-2" style="font-size:.75rem">
+                <label style="color:var(--muted)">Zoom to day range:</label>
+                <input type="number" class="form-control" id="dispDayStart" value="1"   min="1" style="width:70px" oninput="renderDispatchChart()" />
+                <span style="color:var(--muted)">—</span>
+                <input type="number" class="form-control" id="dispDayEnd"   value="14"  min="1" style="width:70px" oninput="renderDispatchChart()" />
+                <select class="form-select" id="dispStrategy" style="width:160px" onchange="renderDispatchChart()">
+                  <option value="quantile">Quantile</option>
+                  <option value="foresight">Perfect Foresight</option>
+                  <option value="forecast">Forecast-Driven</option>
+                </select>
+              </div>
+              <div class="chart-wrap" style="height:340px">
+                <canvas id="chartDispatch"></canvas>
+              </div>
+            </div>
+
+            <!-- Walk-forward analysis -->
+            <div class="tab-pane fade" id="tab-wf">
+              <div class="row g-3">
+                <div class="col-12 col-md-7">
+                  <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">Quantile strategy — P&L per walk-forward window</div>
+                  <div class="chart-wrap" style="height:260px">
+                    <canvas id="chartWF"></canvas>
+                  </div>
+                </div>
+                <div class="col-12 col-md-5">
+                  <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">Window details</div>
+                  <div style="max-height:280px;overflow-y:auto">
+                    <table class="wf-table" id="wfTable">
+                      <thead>
+                        <tr>
+                          <th>Window</th><th>Buy Q</th><th>Sell Q</th><th>P&L (€)</th><th>Thru (MWh)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="wfTableBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Metrics table -->
+            <div class="tab-pane fade" id="tab-metrics">
+              <div class="table-responsive">
+                <table class="wf-table" id="metricsTable">
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      <th style="color:var(--quant)">Quantile (WF)</th>
+                      <th style="color:var(--fore)">Perfect Foresight</th>
+                      <th style="color:var(--fcst)">Forecast-Driven</th>
+                    </tr>
+                  </thead>
+                  <tbody id="metricsTableBody">
+                    <tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1rem">Run backtest to see results</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Price history -->
+            <div class="tab-pane fade" id="tab-price-hist">
+              <div class="d-flex align-items-center gap-3 mb-2" style="font-size:.75rem">
+                <span><span class="leg-dot" style="background:var(--train)"></span>Train</span>
+                <span><span class="leg-dot" style="background:var(--val)"></span>Validation</span>
+                <span><span class="leg-dot" style="background:var(--test)"></span>Test</span>
+              </div>
+              <div class="chart-wrap" style="height:320px">
+                <canvas id="chartPrice"></canvas>
+              </div>
+            </div>
+
+
+            <!-- Bid Suggestor -->
+            <div class="tab-pane fade" id="tab-bid-suggest">
+              <div id="bidSuggestorContent" style="font-size:.82rem">
+                <p class="text-muted">Run a backtest to generate bid suggestions.</p>
+              </div>
+            </div>
+
+          </div><!-- /tab-content -->
+        </div>
+      </div><!-- /results card -->
+
+    </div><!-- /right col -->
+  </div><!-- /row -->
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ================================================================
+   SECTION 1 ─ SEEDED RNG + UTILITIES
+   ================================================================ */
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), seed | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function quantile(arr, q) {
+  if (!arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const pos = (q / 100) * (sorted.length - 1);
+  const lo = Math.floor(pos), hi = Math.ceil(pos);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+}
+
+function mean(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
+function std(arr) {
+  if (arr.length < 2) return 0;
+  const m = mean(arr);
+  return Math.sqrt(arr.reduce((s, x) => s + (x - m) ** 2, 0) / (arr.length - 1));
+}
+function maxDD(pnlSeries) {
+  let peak = 0, dd = 0;
+  for (const v of pnlSeries) {
+    if (v > peak) peak = v;
+    if (peak - v > dd) dd = peak - v;
+  }
+  return dd;
+}
+function sharpe(dailyPnl) {
+  const m = mean(dailyPnl), s = std(dailyPnl);
+  return s > 0 ? (m / s) * Math.sqrt(252) : 0;
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function fmtEur(v) {
+  return (v >= 0 ? '+' : '') + v.toFixed(0) + ' €';
+}
+function fmtN(v, dec = 2) { return isFinite(v) ? v.toFixed(dec) : '—'; }
+
+/* ================================================================
+   SECTION 2 ─ SYNTHETIC NORD POOL DATA GENERATION
+   ================================================================ */
+function generateData(nDays = 730, seed = 42) {
+  const rng = mulberry32(seed);
+  const prices = []; // { ts, price, dayIdx, hour }
+  const start = new Date('2022-01-01T00:00:00Z');
+
+  for (let d = 0; d < nDays; d++) {
+    const dayOfYear = d % 365;
+    // Seasonal: higher winter, lower summer
+    const seas = 1 + 0.45 * Math.cos(2 * Math.PI * (dayOfYear - 355) / 365);
+    // Year: 2022 very high prices (energy crisis), 2023 normalising
+    const yf = d < 365 ? 1.6 : 1.0;
+    const base = 80 * seas * yf;
+
+    // Day-of-week (0=Mon)
+    const dow = (d + 6) % 7; // 2022-01-01 is Sat → dow 5
+    const weekendMult = (dow >= 5) ? 0.82 : 1.0;
+
+    for (let h = 0; h < 24; h++) {
+      const ts = new Date(start.getTime() + (d * 24 + h) * 3_600_000);
+      // Hourly pattern: night trough, morning peak, midday dip, evening peak
+      const mp = Math.exp(-0.5 * ((h - 8.5) / 1.5) ** 2);  // morning
+      const ep = Math.exp(-0.5 * ((h - 19) / 1.8) ** 2);   // evening
+      const nt = Math.exp(-0.5 * ((h - 3.5) / 2) ** 2);    // night trough
+      const hf = 0.55 + 0.6 * (mp + 0.75 * ep) - 0.3 * nt;
+
+      // White noise + occasional spike
+      const noise = (rng() - 0.5) * 0.5;
+      const spike = rng() < 0.008 ? (rng() < 0.5 ? 2.0 : -0.6) : 0;
+
+      let p = base * hf * weekendMult * (1 + noise + spike);
+
+      // Negative price events (summer solar/wind surplus, ~3-5% of hours in summer)
+      const negProb = (dayOfYear > 90 && dayOfYear < 275) ? 0.045 : 0.01;
+      if (rng() < negProb) p = -Math.abs(p) * 0.25;
+
+      prices.push({ ts: ts.toISOString(), price: Math.round(p * 100) / 100, dayIdx: d, hour: h });
+    }
+  }
+  return prices;
+}
+
+/* ================================================================
+   SECTION 3 ─ REALISTIC MARKET SIMULATION ENGINE (Phase 2)
+   ================================================================ */
+/**
+ * Simulate battery dispatch given a dispatch array.
+ * dispatch[i]: > 0 = charge (MW input), < 0 = discharge (MW from battery)
+ * Returns { pnl, pnlSeries (cumulative, per-hour), socSeries, throughput }
+ */
+function simulateDispatch(priceData, dispatch, mp) {
+  const {
+    capacityMWh, powerMW, chargeEff, dischargeEff,
+    txCost, bidAsk, slippageBps, lotSize, wearCost, gateClosure
+  } = mp;
+
+  let soc = mp.initialSOC;
+  let pnl = 0;
+  let throughput = 0;
+  const pnlSeries = [];
+  const socSeries = [];
+
+  for (let i = 0; i < priceData.length; i++) {
+    const p = priceData[i].price;
+    const h = priceData[i].hour;
+    let d = dispatch[i];
+
+    // Gate closure: no trading in last gateClosure hours of the day
+    if (h >= 24 - gateClosure) d = 0;
+
+    if (d > 0) {
+      // CHARGE
+      const halfSpread = bidAsk / 2;
+      const slip = p * slippageBps / 10000;
+      const effBuyP = p + halfSpread + slip + txCost;
+
+      // Clamp to battery limits, round down to lot size
+      const rawMax = Math.min(powerMW, (capacityMWh - soc) / chargeEff);
+      const lots = Math.floor(Math.min(d, rawMax) / lotSize);
+      const rawMWh = lots * lotSize; // energy input (MWh per 1h slot)
+      if (rawMWh >= lotSize) {
+        const stored = rawMWh * chargeEff;
+        pnl -= effBuyP * rawMWh + wearCost * rawMWh;
+        soc = Math.min(capacityMWh, soc + stored);
+        throughput += rawMWh;
+      }
+    } else if (d < 0) {
+      // DISCHARGE
+      const halfSpread = bidAsk / 2;
+      const slip = p * slippageBps / 10000;
+      const effSellP = p - halfSpread - slip - txCost;
+
+      const rawMax = Math.min(powerMW, soc);
+      const lots = Math.floor(Math.min(-d, rawMax) / lotSize);
+      const rawMWh = lots * lotSize; // energy removed from battery
+      if (rawMWh >= lotSize) {
+        const delivered = rawMWh * dischargeEff;
+        pnl += effSellP * delivered - wearCost * rawMWh;
+        soc = Math.max(0, soc - rawMWh);
+        throughput += rawMWh;
+      }
+    }
+
+    pnlSeries.push(pnl);
+    socSeries.push(soc);
+  }
+  return { pnl, pnlSeries, socSeries, throughput };
+}
+
+/* ================================================================
+   SECTION 4 ─ QUANTILE STRATEGY + WALK-FORWARD (Phase 1 + 3)
+   ================================================================ */
+/**
+ * Compute buy/sell thresholds from training prices only.
+ * Returns { buyThreshold, sellThreshold, buyQ, sellQ }
+ */
+function fitQuantile(trainPrices, buyQ, sellQ) {
+  const buy  = quantile(trainPrices, buyQ);
+  const sell = quantile(trainPrices, sellQ);
+  return { buyThreshold: buy, sellThreshold: sell, buyQ, sellQ };
+}
+
+/**
+ * Generate a dispatch signal given quantile thresholds (No lookahead).
+ */
+function quantileDispatch(priceData, qparams, mp) {
+  const { buyThreshold, sellThreshold } = qparams;
+  const { capacityMWh, powerMW, chargeEff } = mp;
+  const dispatch = [];
+  let soc = mp.initialSOC;
+
+  for (const { price } of priceData) {
+    let d = 0;
+    if (price <= buyThreshold && soc < capacityMWh * 0.99) {
+      d = powerMW; // charge signal
+    } else if (price >= sellThreshold && soc > capacityMWh * 0.01) {
+      d = -powerMW; // discharge signal
+    }
+    dispatch.push(d);
+    // Advance soc for signal purposes
+    if (d > 0) soc = Math.min(capacityMWh, soc + Math.min(powerMW, (capacityMWh - soc) / chargeEff) * chargeEff);
+    else if (d < 0) soc = Math.max(0, soc - Math.min(powerMW, soc));
+  }
+  return dispatch;
+}
+
+/**
+ * Optimise quantile pair on training data; returns best {buyQ, sellQ}.
+ */
+function optimiseQuantile(trainPriceData, mp, buyQGrid, sellQGrid) {
+  const trainPrices = trainPriceData.map(x => x.price);
+  let bestPnl = -Infinity, bestBQ = buyQGrid[0], bestSQ = sellQGrid[0];
+
+  for (const bq of buyQGrid) {
+    for (const sq of sellQGrid) {
+      if (sq <= bq + 15) continue; // ensure minimum spread
+      const qp = fitQuantile(trainPrices, bq, sq);
+      const disp = quantileDispatch(trainPriceData, qp, mp);
+      const { pnl } = simulateDispatch(trainPriceData, disp, mp);
+      if (pnl > bestPnl) { bestPnl = pnl; bestBQ = bq; bestSQ = sq; }
+    }
+  }
+  return { buyQ: bestBQ, sellQ: bestSQ };
+}
+
+/**
+ * Walk-forward backtest for quantile strategy (Phase 1 core).
+ * Returns { pnlSeries, socSeries, throughput, windows, dispatch }
+ */
+async function walkForwardQuantile(allData, trainEndIdx, valEndIdx, mp, wfWindowDays, wfStepDays, buyQGrid, sellQGrid, onProgress) {
+  const testData = allData.slice(valEndIdx);
+  const wfWindowH = wfWindowDays * 24;
+  const wfStepH   = wfStepDays   * 24;
+
+  const allPnlSeries  = [];
+  const allSocSeries  = [];
+  const allDispatch   = [];
+  const windows       = []; // for walk-forward table
+  let cumPnl          = 0;
+  let totalThroughput = 0;
+
+  // Initial optimisation on train + val
+  const initTrain = allData.slice(0, valEndIdx);
+  let { buyQ: curBQ, sellQ: curSQ } = optimiseQuantile(initTrain, mp, buyQGrid, sellQGrid);
+
+  const nSteps = Math.ceil(testData.length / wfStepH);
+
+  for (let step = 0; step < nSteps; step++) {
+    const evalStart = step * wfStepH;
+    const evalEnd   = Math.min(evalStart + wfStepH, testData.length);
+    if (evalStart >= testData.length) break;
+
+    const evalSlice  = testData.slice(evalStart, evalEnd);
+    const trainEnd   = valEndIdx + evalStart;
+    const trainStart = Math.max(0, trainEnd - wfWindowH);
+    const trainSlice = allData.slice(trainStart, trainEnd);
+
+    // Re-optimise only if we have enough training data
+    if (trainSlice.length >= 7 * 24) {
+      const res = optimiseQuantile(trainSlice, mp, buyQGrid, sellQGrid);
+      curBQ = res.buyQ; curSQ = res.sellQ;
+    }
+
+    const trainPrices  = trainSlice.map(x => x.price);
+    const qp           = fitQuantile(trainPrices, curBQ, curSQ);
+    const dispatch     = quantileDispatch(evalSlice, qp, mp);
+    const { pnl, pnlSeries, socSeries, throughput } = simulateDispatch(evalSlice, dispatch, mp);
+
+    allDispatch.push(...dispatch);
+    for (const v of pnlSeries) { allPnlSeries.push(cumPnl + v); }
+    allSocSeries.push(...socSeries);
+    cumPnl += pnl;
+    totalThroughput += throughput;
+    mp.initialSOC = socSeries[socSeries.length - 1] ?? 0; // carry SOC forward
+
+    const d0 = testData[evalStart];
+    const d1 = testData[evalEnd - 1];
+    windows.push({
+      label: `${d0.ts.slice(0,10)}→${d1.ts.slice(0,10)}`,
+      buyQ: curBQ, sellQ: curSQ,
+      pnl, throughput
+    });
+
+    if (step % 4 === 0) {
+      onProgress(30 + 30 * step / nSteps, `Walk-forward step ${step+1}/${nSteps}…`);
+      await sleep(0);
+    }
+  }
+
+  // Restore initial SOC for other strategies
+  mp.initialSOC = parseFloat(document.getElementById('initialSOC').value) || 0;
+
+  return { pnlSeries: allPnlSeries, socSeries: allSocSeries, throughput: totalThroughput, windows, dispatch: allDispatch };
+}
+
+/* ================================================================
+   SECTION 5 ─ PERFECT-FORESIGHT DP (Phase 3 — upper bound)
+   ================================================================ */
+/**
+ * Day-ahead DP: given prices for ONE day, compute optimal dispatch.
+ * Returns { dispatch (24 values), pnl (on those prices), endSOC }
+ */
+function dpOneDayForesight(dayPrices, mp, startSOC) {
+  const { capacityMWh, powerMW, chargeEff, dischargeEff,
+          txCost, bidAsk, slippageBps, lotSize, wearCost } = mp;
+
+  const n       = dayPrices.length;
+  const nSOC    = mp.dpSteps; // discretization
+  const socStep = capacityMWh / nSOC;
+  const stepsPerHour = Math.max(1, Math.floor(powerMW / socStep));
+  const startS  = Math.min(nSOC, Math.round(startSOC / socStep));
+  const INF     = -1e15;
+
+  let dp = new Float64Array(nSOC + 1).fill(INF);
+  dp[startS] = 0;
+  const trace = []; // trace[t][s] = previous SOC index
+
+  for (let t = 0; t < n; t++) {
+    const p = dayPrices[t];
+    const halfSpr = bidAsk / 2;
+    const slip    = p * slippageBps / 10000;
+    const effBuy  = p + halfSpr + slip + txCost;
+    const effSell = p - halfSpr - slip - txCost;
+
+    const next = new Float64Array(nSOC + 1).fill(INF);
+    const prev = new Int16Array(nSOC + 1).fill(-1);
+
+    for (let s = 0; s <= nSOC; s++) {
+      if (dp[s] === INF) continue;
+
+      // Idle
+      if (next[s] < dp[s]) { next[s] = dp[s]; prev[s] = s; }
+
+      // Charge
+      for (let c = 1; c <= stepsPerHour && s + c <= nSOC; c++) {
+        const rawMWh   = (c * socStep) / chargeEff;
+        const lots     = Math.floor(rawMWh / lotSize);
+        if (lots < 1) continue;
+        const actualRaw    = lots * lotSize;
+        const actualStored = actualRaw * chargeEff;
+        const ns = Math.min(nSOC, s + Math.round(actualStored / socStep));
+        const cost = effBuy * actualRaw + wearCost * actualRaw;
+        const v = dp[s] - cost;
+        if (next[ns] < v) { next[ns] = v; prev[ns] = s; }
+      }
+
+      // Discharge
+      for (let c = 1; c <= stepsPerHour && s - c >= 0; c++) {
+        const rawMWh      = c * socStep;
+        const lots        = Math.floor(rawMWh / lotSize);
+        if (lots < 1) continue;
+        const actualRaw   = lots * lotSize;
+        const delivered   = actualRaw * dischargeEff;
+        const ns = Math.max(0, s - Math.round(actualRaw / socStep));
+        const revenue = effSell * delivered - wearCost * actualRaw;
+        const v = dp[s] + revenue;
+        if (next[ns] < v) { next[ns] = v; prev[ns] = s; }
+      }
+    }
+    dp = next;
+    trace.push(prev);
+  }
+
+  // Best terminal state
+  let bestV = INF, bestS = startS;
+  for (let s = 0; s <= nSOC; s++) {
+    if (dp[s] > bestV) { bestV = dp[s]; bestS = s; }
+  }
+
+  // Reconstruct
+  const dispatch = new Array(n).fill(0);
+  let s = bestS;
+  for (let t = n - 1; t >= 0; t--) {
+    const ps = trace[t][s];
+    if (ps < 0) { s = startS; break; }
+    const delta = s - ps;
+    if (delta > 0) dispatch[t] =  delta * socStep / chargeEff; // charged
+    else if (delta < 0) dispatch[t] = delta * socStep;           // discharged (negative)
+    s = ps;
+  }
+
+  return { dispatch, pnl: bestV, endSOC: bestS * socStep };
+}
+
+/**
+ * Run perfect-foresight for entire test period, day by day.
+ */
+async function runForesightBacktest(testData, mp, onProgress) {
+  const nDays = Math.ceil(testData.length / 24);
+  const allDispatch = [], pnlSeries = [], socSeries = [];
+  let cumPnl = 0, totalThru = 0;
+  let socNow = mp.initialSOC;
+
+  for (let d = 0; d < nDays; d++) {
+    const slice = testData.slice(d * 24, d * 24 + 24);
+    if (!slice.length) break;
+    const dayPrices = slice.map(x => x.price);
+
+    const { dispatch, endSOC } = dpOneDayForesight(dayPrices, { ...mp, initialSOC: socNow }, socNow);
+    const { pnl, pnlSeries: dps, socSeries: dss, throughput } = simulateDispatch(slice, dispatch, { ...mp, initialSOC: socNow });
+
+    allDispatch.push(...dispatch);
+    for (const v of dps) pnlSeries.push(cumPnl + v);
+    socSeries.push(...dss);
+    cumPnl += pnl;
+    totalThru += throughput;
+    socNow = dss[dss.length - 1] ?? endSOC;
+
+    if (d % 20 === 0) {
+      onProgress(60 + 15 * d / nDays, `Foresight day ${d+1}/${nDays}…`);
+      await sleep(0);
+    }
+  }
+  return { pnl: cumPnl, pnlSeries, socSeries, throughput: totalThru, dispatch: allDispatch };
+}
+
+/* ================================================================
+   SECTION 6 ─ FORECAST-DRIVEN DISPATCH (Phase 3)
+   ================================================================ */
+/**
+ * Build a 24-hour price forecast for tomorrow using:
+ *   – same-hour rolling mean over the last `lookback` days (same day-of-week preferred)
+ *   – level adjustment from most recent 7 days vs. longer term
+ */
+function buildForecast(historicalData, lookbackDays) {
+  const n = historicalData.length;
+  if (n < 24) return new Array(24).fill(mean(historicalData.map(x => x.price)));
+
+  const hourly = new Array(24).fill(0).map(() => []);
+  const from = Math.max(0, n - lookbackDays * 24);
+
+  for (let i = from; i < n; i++) {
+    hourly[historicalData[i].hour].push(historicalData[i].price);
+  }
+
+  const recentLevel  = mean(historicalData.slice(-7 * 24).map(x => x.price));
+  const baseLevel    = mean(historicalData.slice(from).map(x => x.price));
+  const levelAdj     = baseLevel > 0 ? recentLevel / baseLevel : 1;
+
+  return hourly.map(arr => (arr.length ? mean(arr) : 50) * levelAdj);
+}
+
+/**
+ * Forecast-driven dispatch for entire test period.
+ * Each day: forecast tomorrow's prices → DP → apply to actual prices.
+ */
+async function runForecastBacktest(allData, testStartIdx, testData, mp, forecastLookback, onProgress) {
+  const nDays = Math.ceil(testData.length / 24);
+  const allDispatch = [], pnlSeries = [], socSeries = [];
+  let cumPnl = 0, totalThru = 0;
+  let socNow = mp.initialSOC;
+
+  for (let d = 0; d < nDays; d++) {
+    const slice = testData.slice(d * 24, d * 24 + 24);
+    if (!slice.length) break;
+
+    // Historical data available BEFORE this day (no lookahead)
+    const histEnd = testStartIdx + d * 24;
+    const histStart = Math.max(0, histEnd - forecastLookback * 24);
+    const histData = allData.slice(histStart, histEnd);
+
+    const forecast  = buildForecast(histData, forecastLookback);
+
+    // Optimise dispatch on forecast prices (no lookahead — based on historical average only)
+    const { dispatch: forecastDispatch } = dpOneDayForesight(forecast, { ...mp, initialSOC: socNow }, socNow);
+
+    // Evaluate on actual prices
+    const { pnl, pnlSeries: dps, socSeries: dss, throughput } = simulateDispatch(slice, forecastDispatch, { ...mp, initialSOC: socNow });
+
+    allDispatch.push(...forecastDispatch);
+    for (const v of dps) pnlSeries.push(cumPnl + v);
+    socSeries.push(...dss);
+    cumPnl += pnl;
+    totalThru += throughput;
+    socNow = dss[dss.length - 1] ?? 0;
+
+    if (d % 20 === 0) {
+      onProgress(75 + 15 * d / nDays, `Forecast day ${d+1}/${nDays}…`);
+      await sleep(0);
+    }
+  }
+  return { pnl: cumPnl, pnlSeries, socSeries, throughput: totalThru, dispatch: allDispatch };
+}
+
+/* ================================================================
+   SECTION 7 ─ METRICS
+   ================================================================ */
+function computeMetrics(pnlSeries, throughput, testData) {
+  if (!pnlSeries.length) return {};
+
+  // Daily P&L
+  const dailyPnl = [];
+  for (let i = 0; i < pnlSeries.length; i += 24) {
+    const prev = i === 0 ? 0 : pnlSeries[i - 1];
+    const dayEnd = Math.min(i + 23, pnlSeries.length - 1);
+    dailyPnl.push(pnlSeries[dayEnd] - prev);
+  }
+
+  const totalPnl   = pnlSeries[pnlSeries.length - 1];
+  const nDays      = dailyPnl.length;
+  const avgDailyPnl = mean(dailyPnl);
+  const sh          = sharpe(dailyPnl);
+  const dd          = maxDD(pnlSeries);
+  const hitRate     = dailyPnl.filter(x => x > 0).length / nDays;
+  const pnlPerMWh   = throughput > 0 ? totalPnl / throughput : 0;
+  const nTrades     = throughput > 0 ? Math.round(throughput) : 0; // approx cycles
+  const prices      = testData.map(x => x.price);
+  const avgSpread   = mean(prices.slice(0, prices.length).filter((_, i) => i % 24 < 4 ? false : true)) // rough
+
+  return { totalPnl, nDays, avgDailyPnl, sh, dd, hitRate, pnlPerMWh, throughput };
+}
+
+/* ================================================================
+   SECTION 8 ─ CHART RENDERING
+   ================================================================ */
+let charts = {};
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function renderEquityChart(labels, q, f, fc) {
+  destroyChart('equity');
+  const ctx = document.getElementById('chartEquity').getContext('2d');
+  const ds = [];
+  if (q)  ds.push({ label: 'Quantile (WF)',      data: q,  borderColor: 'rgba(168,85,247,.9)',  backgroundColor: 'rgba(168,85,247,.08)', borderWidth: 1.5, pointRadius: 0, fill: true });
+  if (f)  ds.push({ label: 'Perfect Foresight',  data: f,  borderColor: 'rgba(239,68,68,.9)',   backgroundColor: 'rgba(239,68,68,.05)',  borderWidth: 1.5, pointRadius: 0 });
+  if (fc) ds.push({ label: 'Forecast-Driven',    data: fc, borderColor: 'rgba(6,182,212,.9)',   backgroundColor: 'rgba(6,182,212,.05)', borderWidth: 1.5, pointRadius: 0 });
+  charts['equity'] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: ds },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1c2336', borderColor: '#2d3554', borderWidth: 1, titleColor: '#cdd6f4', bodyColor: '#8892b0', callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtEur(ctx.parsed.y)}` } } },
+      scales: {
+        x: { display: true, grid: { color: 'rgba(45,53,84,.4)' }, ticks: { color: '#8892b0', maxTicksLimit: 12, maxRotation: 0 } },
+        y: { display: true, grid: { color: 'rgba(45,53,84,.4)' }, ticks: { color: '#8892b0', callback: v => v.toFixed(0) + '€' } }
+      }
+    }
+  });
+}
+
+function renderPriceHistChart(allData, trainEnd, valEnd) {
+  destroyChart('price');
+  const labels = [], trainPrices = [], valPrices = [], testPrices = [];
+  // Down-sample to daily average for readability
+  for (let d = 0; d < Math.floor(allData.length / 24); d++) {
+    const slice = allData.slice(d * 24, d * 24 + 24);
+    const avg = mean(slice.map(x => x.price));
+    labels.push(slice[0].ts.slice(0, 10));
+    const idx = d * 24;
+    if (idx < trainEnd)      { trainPrices.push(avg); valPrices.push(null); testPrices.push(null); }
+    else if (idx < valEnd)   { trainPrices.push(null); valPrices.push(avg); testPrices.push(null); }
+    else                     { trainPrices.push(null); valPrices.push(null); testPrices.push(avg); }
+  }
+  charts['price'] = new Chart(document.getElementById('chartPrice').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Train',  data: trainPrices, borderColor: 'rgba(34,197,94,.7)',  backgroundColor: 'rgba(34,197,94,.1)',  borderWidth: 1, pointRadius: 0, fill: true, spanGaps: false },
+        { label: 'Val',    data: valPrices,   borderColor: 'rgba(245,158,11,.7)', backgroundColor: 'rgba(245,158,11,.1)', borderWidth: 1, pointRadius: 0, fill: true, spanGaps: false },
+        { label: 'Test',   data: testPrices,  borderColor: 'rgba(59,130,246,.7)', backgroundColor: 'rgba(59,130,246,.1)', borderWidth: 1, pointRadius: 0, fill: true, spanGaps: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { labels: { color: '#8892b0', boxWidth: 10, font: { size: 11 } } }, tooltip: { mode: 'index', intersect: false, backgroundColor: '#1c2336', borderColor: '#2d3554', borderWidth: 1, titleColor: '#cdd6f4', bodyColor: '#8892b0' } },
+      scales: {
+        x: { grid: { color: 'rgba(45,53,84,.4)' }, ticks: { color: '#8892b0', maxTicksLimit: 15, maxRotation: 0 } },
+        y: { grid: { color: 'rgba(45,53,84,.4)' }, ticks: { color: '#8892b0', callback: v => v.toFixed(0) + '€' } }
+      }
+    }
+  });
+}
+
+// Stored results for dispatch chart
+let storedResults = null;
+
+function renderDispatchChart() {
+  if (!storedResults) return;
+  const { testData } = storedResults;
+  const stratKey = document.getElementById('dispStrategy').value;
+  const dispRes = storedResults[stratKey];
+  if (!dispRes) return;
+
+  destroyChart('dispatch');
+  const ds = parseInt(document.getElementById('dispDayStart').value) - 1;
+  const de = parseInt(document.getElementById('dispDayEnd').value);
+  const hStart = ds * 24, hEnd = Math.min(de * 24, testData.length);
+
+  const priceSlice    = testData.slice(hStart, hEnd).map(x => x.price);
+  const dispSlice     = dispRes.dispatch.slice(hStart, hEnd);
+  const pnlSlice      = dispRes.pnlSeries.slice(hStart, hEnd);
+  const labels        = testData.slice(hStart, hEnd).map(x => x.ts.slice(0, 16).replace('T', ' '));
+
+  const colors = { quantile: 'rgba(168,85,247,1)', foresight: 'rgba(239,68,68,1)', forecast: 'rgba(6,182,212,1)' };
+  const col = colors[stratKey];
+
+  const chargeDisp  = dispSlice.map(v => v > 0 ? v : null);
+  const dischargeDisp = dispSlice.map(v => v < 0 ? -v : null);
+
+  charts['dispatch'] = new Chart(document.getElementById('chartDispatch').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { type: 'line', label: 'Price (€/MWh)', data: priceSlice, borderColor: '#f59e0b', borderWidth: 1.5, pointRadius: 0, yAxisID: 'yPrice', fill: false, order: 0 },
+        { type: 'line', label: 'Cum P&L (€)', data: pnlSlice.map(v => v - (pnlSlice[0] || 0)), borderColor: col, borderWidth: 1.5, pointRadius: 0, yAxisID: 'yPnl', fill: false, order: 0 },
+        { label: 'Charge (MW)',    data: chargeDisp,   backgroundColor: 'rgba(34,197,94,.6)',  yAxisID: 'yMW', order: 1 },
+        { label: 'Discharge (MW)', data: dischargeDisp, backgroundColor: 'rgba(239,68,68,.6)', yAxisID: 'yMW', order: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { labels: { color: '#8892b0', boxWidth: 10, font: { size: 11 } } }, tooltip: { mode: 'index', intersect: false, backgroundColor: '#1c2336', borderColor: '#2d3554', borderWidth: 1, titleColor: '#cdd6f4', bodyColor: '#8892b0' } },
+      scales: {
+        x: { grid: { color: 'rgba(45,53,84,.3)' }, ticks: { color: '#8892b0', maxTicksLimit: 12, maxRotation: 45 } },
+        yPrice: { position: 'left',  grid: { color: 'rgba(45,53,84,.4)' }, ticks: { color: '#f59e0b', callback: v => v.toFixed(0) + '€' } },
+        yPnl:   { position: 'right', grid: { display: false }, ticks: { color: '#8892b0', callback: v => v.toFixed(0) + '€' }, title: { display: true, text: 'P&L Δ', color: '#8892b0', font: { size: 10 } } },
+        yMW:    { position: 'right', grid: { display: false }, ticks: { color: '#8892b0', callback: v => v.toFixed(2) + 'MW' }, title: { display: true, text: 'MW', color: '#8892b0', font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function renderWFChart(windows) {
+  destroyChart('wf');
+  const labels = windows.map((_, i) => `W${i+1}`);
+  const data   = windows.map(w => w.pnl);
+  const colors = data.map(v => v >= 0 ? 'rgba(34,197,94,.7)' : 'rgba(239,68,68,.7)');
+  charts['wf'] = new Chart(document.getElementById('chartWF').getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'P&L (€)', data, backgroundColor: colors, borderRadius: 3 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1c2336', borderColor: '#2d3554', borderWidth: 1, titleColor: '#cdd6f4', bodyColor: '#8892b0', callbacks: { label: ctx => ` P&L: ${fmtEur(ctx.parsed.y)}` } } },
+      scales: {
+        x: { grid: { color: 'rgba(45,53,84,.3)' }, ticks: { color: '#8892b0', maxRotation: 0 } },
+        y: { grid: { color: 'rgba(45,53,84,.4)' }, ticks: { color: '#8892b0', callback: v => v.toFixed(0) + '€' } }
+      }
+    }
+  });
+}
+
+function updateMetricsTable(qm, fm, fcm) {
+  const rows = [
+    ['Total P&L (€)',          qm.totalPnl, fm.totalPnl, fcm.totalPnl],
+    ['Avg daily P&L (€)',      qm.avgDailyPnl, fm.avgDailyPnl, fcm.avgDailyPnl],
+    ['Annualised Sharpe',      qm.sh, fm.sh, fcm.sh],
+    ['Max Drawdown (€)',       qm.dd, fm.dd, fcm.dd],
+    ['Hit Rate (%)',           qm.hitRate * 100, fm.hitRate * 100, fcm.hitRate * 100],
+    ['Total Throughput (MWh)', qm.throughput, fm.throughput, fcm.throughput],
+    ['P&L per MWh (€/MWh)',   qm.pnlPerMWh, fm.pnlPerMWh, fcm.pnlPerMWh],
+    ['Capture vs Foresight (%)', fm.totalPnl ? qm.totalPnl / fm.totalPnl * 100 : 0, 100, fm.totalPnl ? fcm.totalPnl / fm.totalPnl * 100 : 0],
+  ];
+  const fmtCell = (v, key) => {
+    const isNeg = key.includes('Drawdown');
+    const color = isNeg ? (v > 0 ? '#ef4444' : '#22c55e') : (v > 0 ? '#22c55e' : '#ef4444');
+    return `<td style="color:${color}">${fmtN(v, 1)}</td>`;
+  };
+  const tbody = document.getElementById('metricsTableBody');
+  tbody.innerHTML = rows.map(([label, q, f, fc]) =>
+    `<tr><td style="color:var(--muted)">${label}</td>${fmtCell(q, label)}${fmtCell(f, label)}${fmtCell(fc, label)}</tr>`
+  ).join('');
+}
+
+function populateWFTable(windows) {
+  const tbody = document.getElementById('wfTableBody');
+  tbody.innerHTML = windows.map(w =>
+    `<tr>
+      <td style="color:var(--muted);font-size:.72rem">${w.label}</td>
+      <td>${w.buyQ}%</td>
+      <td>${w.sellQ}%</td>
+      <td class="${w.pnl >= 0 ? 'text-pos' : 'text-neg'}">${fmtEur(w.pnl)}</td>
+      <td style="color:var(--muted)">${w.throughput.toFixed(1)}</td>
+    </tr>`
+  ).join('');
+}
+
+/* ================================================================
+   SECTION 9 ─ UI HELPERS
+   ================================================================ */
+function updateSplitBar() {
+  const tf = parseInt(document.getElementById('trainFrac').value) || 60;
+  const vf = parseInt(document.getElementById('valFrac').value)   || 20;
+  const test = Math.max(0, 100 - tf - vf);
+  document.getElementById('testFracDisplay').value = test;
+  document.getElementById('seg-train').style.width = tf + '%';
+  document.getElementById('seg-val').style.width   = vf + '%';
+  document.getElementById('seg-test').style.width  = test + '%';
+}
+
+function setProgress(pct, msg) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('statusMsg').textContent = msg;
+}
+
+function getParams() {
+  const capacityMWh = parseFloat(document.getElementById('capacityMWh').value) || 2.0;
+  return {
+    capacityMWh,
+    powerMW:      parseFloat(document.getElementById('powerMW').value)       || 1.0,
+    chargeEff:    parseInt(document.getElementById('chargeEff').value)       / 100,
+    dischargeEff: parseInt(document.getElementById('dischargeEff').value)    / 100,
+    initialSOC:   parseFloat(document.getElementById('initialSOC').value)    || 0,
+    txCost:       parseFloat(document.getElementById('txCost').value)         || 0.5,
+    bidAsk:       parseFloat(document.getElementById('bidAsk').value)         || 1.0,
+    slippageBps:  parseFloat(document.getElementById('slippageBps').value)    || 10,
+    lotSize:      parseFloat(document.getElementById('lotSize').value)         || 0.1,
+    wearCost:     parseFloat(document.getElementById('wearCost').value)       || 3.0,
+    gateClosure:  parseInt(document.getElementById('gateClosure').value)      || 0,
+    dpSteps:      parseInt(document.getElementById('dpSteps').value)           || 20,
+  };
+}
+
+function buildQGrid() {
+  const bMin = parseInt(document.getElementById('buyQMin').value)  || 5;
+  const bMax = parseInt(document.getElementById('buyQMax').value)  || 40;
+  const sMin = parseInt(document.getElementById('sellQMin').value) || 60;
+  const sMax = parseInt(document.getElementById('sellQMax').value) || 95;
+  const bGrid = [], sGrid = [];
+  for (let q = bMin; q <= bMax; q += 5) bGrid.push(q);
+  for (let q = sMin; q <= sMax; q += 5) sGrid.push(q);
+  return { bGrid, sGrid };
+}
+
+// Data source toggle
+document.getElementById('dataSource').addEventListener('change', function () {
+  document.getElementById('uploadZone').classList.toggle('d-none', this.value !== 'upload');
+  document.getElementById('repoZone').classList.toggle('d-none', this.value !== 'repoDayAhead');
+});
+
+// Fetch + parse real Nord Pool day-ahead CSV from the repo
+async function loadRepoData(area) {
+  const url = 'https://raw.githubusercontent.com/bibekagarwal-a11y/Nordpool-data-BESS/main/data/dayahead_prices.csv';
+  document.getElementById('repoStatus').textContent = 'Fetching data…';
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('Failed to fetch repo data: ' + resp.status);
+  const text = await resp.text();
+  const rows = text.trim().split('\n').filter(Boolean);
+  // header: market,date_cet,area,deliveryStartUTC,deliveryEndUTC,deliveryStartCET,deliveryEndCET,price,currency
+  const filtered = rows.slice(1).filter(r => r.split(',')[2] === area);
+  if (!filtered.length) throw new Error(`No data found for area: ${area}`);
+  // Aggregate 15-min slots → hourly (average price per UTC hour)
+  const hourMap = new Map();
+  for (const row of filtered) {
+    const parts = row.split(',');
+    const ts = parts[3]; // deliveryStartUTC e.g. "2026-02-28T23:00:00Z"
+    const price = parseFloat(parts[7]);
+    if (!isFinite(price)) continue;
+    const hourKey = ts.slice(0, 13); // "2026-02-28T23"
+    if (!hourMap.has(hourKey)) hourMap.set(hourKey, { sum: 0, count: 0, ts: hourKey + ':00:00Z' });
+    const h = hourMap.get(hourKey);
+    h.sum += price; h.count++;
+  }
+  // Build sorted hourly array
+  const sorted = [...hourMap.values()].sort((a, b) => a.ts < b.ts ? -1 : 1);
+  const data = sorted.map((h, i) => ({
+    ts: h.ts,
+    price: h.sum / h.count,
+    hour: new Date(h.ts).getUTCHours(),
+    dayIdx: Math.floor(i / 24)
+  }));
+  const nDays = Math.ceil(data.length / 24);
+  const first = data[0].ts.slice(0, 10);
+  const last  = data[data.length - 1].ts.slice(0, 10);
+  document.getElementById('repoStatus').textContent =
+    `✒ ${data.length} hourly obs · ${nDays} days · ${first} → ${last}`;
+  if (nDays < 30) {
+    document.getElementById('repoStatus').textContent +=
+      ' ⚠️ Short dataset — consider lowering WF Window & Train %';
+  }
+  return data;
+}
+document.getElementById('csvInput').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const text = ev.target.result;
+    try {
+      const rows = text.split('\n').filter(Boolean);
+      const header = rows[0].toLowerCase();
+      const priceCol = header.includes('price') ? 1 : 1;
+      window._customData = rows.slice(1).map(row => {
+        const parts = row.split(',');
+        return { ts: parts[0].trim(), price: parseFloat(parts[priceCol]), hour: new Date(parts[0]).getUTCHours(), dayIdx: 0 };
+      }).filter(x => isFinite(x.price));
+      const nDays = Math.floor(window._customData.length / 24);
+      window._customData.forEach((x, i) => { x.dayIdx = Math.floor(i / 24); });
+      document.getElementById('dataStatus').textContent = `${window._customData.length} hourly observations loaded from CSV`;
+    } catch (err) {
+      document.getElementById('dataStatus').textContent = 'Error parsing CSV: ' + err.message;
+    }
+  };
+  reader.readAsText(file);
+});
+
+/* ================================================================
+   SECTION 10 ─ MAIN ORCHESTRATION
+   ================================================================ */
+async function runAll() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  document.getElementById('progressWrap').style.display = 'block';
+  setProgress(0, 'Initialising…');
+
+  try {
+    // ── Gather params ──
+    const mp  = getParams();
+    const origSOC = mp.initialSOC;
+    const tf  = parseInt(document.getElementById('trainFrac').value) || 60;
+    const vf  = parseInt(document.getElementById('valFrac').value)   || 20;
+    const wfWindowDays = parseInt(document.getElementById('wfWindow').value) || 60;
+    const wfStepDays   = parseInt(document.getElementById('wfStep').value)   || 7;
+    const forecastLookback = parseInt(document.getElementById('forecastLookback').value) || 14;
+    const { bGrid, sGrid } = buildQGrid();
+
+    const runQ  = document.getElementById('runQuantile').checked;
+    const runF  = document.getElementById('runForesight').checked;
+    const runFc = document.getElementById('runForecast').checked;
+
+    // ── Load / generate data ──
+    setProgress(5, 'Generating price data…');
+    await sleep(0);
+
+    let allData;
+    const src = document.getElementById('dataSource').value;
+    if (src === 'repoDayAhead') {
+      const area = document.getElementById('repoArea').value;
+      allData = await loadRepoData(area);
+    } else if (src === 'upload' && window._customData) {
+      allData = window._customData;
+    } else if (src === 'synth1yr') {
+      allData = generateData(365, 42);
+    } else {
+      allData = generateData(730, 42);
+    }
+
+    const n        = allData.length;
+    const trainEnd = Math.floor(n * tf / 100);
+    const valEnd   = Math.floor(n * (tf + vf) / 100);
+
+    const trainData = allData.slice(0, trainEnd);
+    const testData  = allData.slice(valEnd);
+
+    setProgress(10, 'Drawing price history chart…');
+    await sleep(0);
+    renderPriceHistChart(allData, trainEnd, valEnd);
+
+    // ── Phase 1+3: Quantile walk-forward ──
+    let qResult = null;
+    if (runQ) {
+      setProgress(15, 'Running walk-forward quantile strategy…');
+      mp.initialSOC = origSOC;
+      qResult = await walkForwardQuantile(
+        allData, trainEnd, valEnd, mp,
+        wfWindowDays, wfStepDays, bGrid, sGrid,
+        (p, msg) => setProgress(p, msg)
+      );
+    }
+
+    // ── Phase 3: Perfect foresight ──
+    let fResult = null;
+    if (runF) {
+      setProgress(60, 'Running perfect-foresight DP…');
+      mp.initialSOC = origSOC;
+      fResult = await runForesightBacktest(testData, { ...mp }, (p, msg) => setProgress(p, msg));
+    }
+
+    // ── Phase 3: Forecast-driven dispatch ──
+    let fcResult = null;
+    if (runFc) {
+      setProgress(75, 'Running forecast-driven dispatch…');
+      mp.initialSOC = origSOC;
+      fcResult = await runForecastBacktest(allData, valEnd, testData, { ...mp }, forecastLookback, (p, msg) => setProgress(p, msg));
+    }
+
+    setProgress(90, 'Rendering results…');
+    await sleep(0);
+
+    // ── Build equity chart labels (test period, daily) ──
+    const nTestDays = Math.ceil(testData.length / 24);
+    const eqLabels  = [];
+    for (let d = 0; d < nTestDays; d++) {
+      const idx = Math.min(d * 24, testData.length - 1);
+      eqLabels.push(testData[idx].ts.slice(0, 10));
+    }
+    const samplePnl = (res) => {
+      if (!res) return null;
+      const sampled = [];
+      for (let d = 0; d < nTestDays; d++) {
+        const i = Math.min(d * 24 + 23, res.pnlSeries.length - 1);
+        sampled.push(res.pnlSeries[i]);
+      }
+      return sampled;
+    };
+
+    renderEquityChart(eqLabels, samplePnl(qResult), samplePnl(fResult), samplePnl(fcResult));
+
+    // ── Walk-forward chart & table ──
+    if (qResult) {
+      renderWFChart(qResult.windows);
+      populateWFTable(qResult.windows);
+    }
+
+    // ── Summary metrics ──
+    const EMPTY_M = { totalPnl: 0, avgDailyPnl: 0, sh: 0, dd: 0, hitRate: 0, throughput: 0, pnlPerMWh: 0 };
+    const qm  = qResult  ? computeMetrics(qResult.pnlSeries,  qResult.throughput,  testData) : EMPTY_M;
+    const fm  = fResult  ? computeMetrics(fResult.pnlSeries,  fResult.throughput,  testData) : EMPTY_M;
+    const fcm = fcResult ? computeMetrics(fcResult.pnlSeries, fcResult.throughput, testData) : EMPTY_M;
+
+    updateMetricsTable(qm, fm, fcm);
+
+    // ── Top metric cards ──
+    const setM = (id, v, dec = 0) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = isFinite(v) ? (dec ? fmtN(v, dec) : fmtEur(v)) : '—';
+      el.className = 'metric-value ' + (v >= 0 ? 'text-pos' : 'text-neg');
+    };
+    setM('m-qpnl',  qm.totalPnl);
+    setM('m-fpnl',  fm.totalPnl);
+    setM('m-fcpnl', fcm.totalPnl);
+    const cap = fm.totalPnl ? (qm.totalPnl / fm.totalPnl * 100) : 0;
+    document.getElementById('m-qcap').textContent = fmtN(cap, 1) + '%';
+    document.getElementById('m-qcap').className = 'metric-value ' + (cap > 50 ? 'text-pos' : 'text-neg');
+    document.getElementById('m-qsharpe').textContent = fmtN(qm.sh, 2);
+    document.getElementById('m-qsharpe').className = 'metric-value ' + (qm.sh > 0 ? 'text-pos' : 'text-neg');
+    document.getElementById('m-qdd').textContent = fmtEur(-qm.dd);
+    document.getElementById('m-qdd').className = 'metric-value text-neg';
+
+    // ── Store for dispatch chart ──
+    storedResults = {
+      testData,
+      quantile:  qResult  ? { dispatch: qResult.dispatch,  pnlSeries: qResult.pnlSeries  } : null,
+      foresight: fResult  ? { dispatch: fResult.dispatch,  pnlSeries: fResult.pnlSeries  } : null,
+      forecast:  fcResult ? { dispatch: fcResult.dispatch, pnlSeries: fcResult.pnlSeries } : null,
+    };
+    document.getElementById('dispDayEnd').max = nTestDays;
+    document.getElementById('dispDayEnd').value = Math.min(14, nTestDays);
+    renderDispatchChart();
+    renderBidSuggestor(testData, qResult, fResult, fcResult, mp, windows);
+
+    setProgress(100, 'Done ✓');
+    setTimeout(() => {
+      document.getElementById('progressWrap').style.display = 'none';
+      document.getElementById('statusMsg').textContent = `${testData.length} test hours analysed · 3 strategies compared`;
+    }, 1200);
+
+  } catch (err) {
+    setProgress(0, 'Error: ' + err.message);
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Sync SOC slider max with capacity
+document.getElementById('capacityMWh').addEventListener('input', function () {
+  const cap = parseFloat(this.value) || 2;
+  const slider = document.getElementById('initialSOC');
+  slider.max = cap;
+  if (parseFloat(slider.value) > cap) { slider.value = cap; document.getElementById('socLabel').textContent = cap.toFixed(1); }
+});
+
+
+/* ================================================================
+   SECTION 8 — BID SUGGESTOR
+   ================================================================ */
+function renderBidSuggestor(testData, qResult, fResult, fcResult, mp, windows) {
+  const el = document.getElementById('bidSuggestorContent');
+  if (!el) return;
+  if (!qResult || !testData || !testData.length) {
+    el.innerHTML = '<p class="text-muted">No quantile backtest results available.</p>';
+    return;
+  }
+  const lastWin = windows && windows.length ? windows[windows.length - 1] : null;
+  const allPrices = testData.map(d => d.price);
+  const currentBuyThreshold = lastWin ? quantile(allPrices, lastWin.buyQ / 100) : quantile(allPrices, 25);
+  const currentSellThreshold = lastWin ? quantile(allPrices, lastWin.sellQ / 100) : quantile(allPrices, 75);
+  const recentPrices = allPrices.slice(-168);
+  const avgPrice = mean(recentPrices);
+  const stdPrice = std(recentPrices);
+  const hourlyProfile = new Array(24).fill(null).map(() => ({
+    charges: 0, discharges: 0, idle: 0, total: 0,
+    chargePrices: [], dischargePrices: []
+  }));
+  const qDisp = qResult.dispatch;
+  for (let i = 0; i < testData.length; i++) {
+    const h = testData[i].hour;
+    const d = qDisp[i];
+    const p = testData[i].price;
+    if (h < 0 || h > 23) continue;
+    hourlyProfile[h].total++;
+    if (d > 0) { hourlyProfile[h].charges++; hourlyProfile[h].chargePrices.push(p); }
+    else if (d < 0) { hourlyProfile[h].discharges++; hourlyProfile[h].dischargePrices.push(p); }
+    else { hourlyProfile[h].idle++; }
+  }
+  const qMetrics = computeMetrics(qResult.pnlSeries, qResult.throughput, testData);
+  const fPnl = fResult ? fResult.pnlSeries[fResult.pnlSeries.length - 1] : 0;
+  const qPnl = qMetrics.totalPnl;
+  const captureRatio = fPnl > 0 ? (qPnl / fPnl * 100) : 0;
+  const confLevel = captureRatio >= 50 ? 'HIGH' : captureRatio >= 25 ? 'MEDIUM' : 'LOW';
+  const confColor = captureRatio >= 50 ? '#22c55e' : captureRatio >= 25 ? '#eab308' : '#ef4444';
+  const gateInfo = [
+    { market: 'DA (Day-Ahead)', gate: 'D−1 12:00 CET', delivery: 'All 24h of day D', note: 'Primary volume. Place bids at quantile threshold.', buyAdj: 1.0, sellAdj: 1.0 },
+    { market: 'IDA1', gate: 'D−1 15:00 CET', delivery: 'All 24h of day D', note: 'Adjust DA position. Tighter spread (±3%).', buyAdj: 0.97, sellAdj: 1.03 },
+    { market: 'IDA2', gate: 'D−1 22:00 CET', delivery: 'All 24h of day D', note: 'Evening correction. Wider spread (±5%).', buyAdj: 0.95, sellAdj: 1.05 },
+    { market: 'IDA3', gate: 'D 10:00 CET', delivery: 'Hours 12–24 only', note: 'Most volatile, thin liquidity (±7%).', buyAdj: 0.93, sellAdj: 1.07 }
+  ];
+  const mkRows = gateInfo.map(g =>
+    '<tr><td><strong>' + g.market + '</strong></td>'
+    + '<td>' + g.gate + '</td><td>' + g.delivery + '</td>'
+    + '<td style="color:#22c55e;font-weight:600">' + fmtEur(currentBuyThreshold * g.buyAdj) + '</td>'
+    + '<td style="color:#ef4444;font-weight:600">' + fmtEur(currentSellThreshold * g.sellAdj) + '</td>'
+    + '<td style="font-size:.75rem;color:var(--muted)">' + g.note + '</td></tr>'
+  ).join('');
+  const hourRows = hourlyProfile.map((hp, h) => {
+    const chargeRate = hp.total > 0 ? hp.charges / hp.total : 0;
+    const dischRate = hp.total > 0 ? hp.discharges / hp.total : 0;
+    let action = 'HOLD', actColor = 'var(--muted)';
+    if (chargeRate > 0.25) { action = 'CHARGE'; actColor = '#22c55e'; }
+    if (dischRate > 0.25) { action = 'DISCHARGE'; actColor = '#ef4444'; }
+    if (chargeRate > 0.25 && dischRate > 0.25) { action = 'MIXED'; actColor = '#eab308'; }
+    const conf = Math.max(chargeRate, dischRate);
+    const bar = Math.round(conf * 100);
+    const avgChgP = hp.chargePrices.length ? mean(hp.chargePrices) : null;
+    const avgDisP = hp.dischargePrices.length ? mean(hp.dischargePrices) : null;
+    return '<tr>'
+      + '<td>' + String(h).padStart(2, '0') + ':00</td>'
+      + '<td style="color:' + actColor + ';font-weight:700">' + action + '</td>'
+      + '<td>' + (chargeRate * 100).toFixed(0) + '%</td>'
+      + '<td>' + (dischRate * 100).toFixed(0) + '%</td>'
+      + '<td>' + (avgChgP !== null ? fmtEur(avgChgP) : '–') + '</td>'
+      + '<td>' + (avgDisP !== null ? fmtEur(avgDisP) : '–') + '</td>'
+      + '<td><div style="background:' + actColor + ';width:' + bar + '%;height:6px;border-radius:3px"></div></td>'
+      + '</tr>';
+  }).join('');
+  el.innerHTML = ''
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.6rem;margin-bottom:1rem">'
+    + '<div class="metric-card"><div class="metric-value" style="color:#22c55e">' + fmtEur(currentBuyThreshold) + '</div><div class="metric-sub">Buy Threshold</div></div>'
+    + '<div class="metric-card"><div class="metric-value" style="color:#ef4444">' + fmtEur(currentSellThreshold) + '</div><div class="metric-sub">Sell Threshold</div></div>'
+    + '<div class="metric-card"><div class="metric-value">' + fmtEur(currentSellThreshold - currentBuyThreshold) + '</div><div class="metric-sub">Spread</div></div>'
+    + '<div class="metric-card"><div class="metric-value" style="color:' + confColor + '">' + confLevel + '</div><div class="metric-sub">Confidence (' + captureRatio.toFixed(0) + '% capture)</div></div>'
+    + '</div>'
+    + '<h6 style="color:var(--accent);margin:1rem 0 .5rem">⚡ Market-Layer Bid Levels</h6>'
+    + '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.5rem">Thresholds from latest walk-forward window'
+    + (lastWin ? ' (Buy Q' + lastWin.buyQ + ' / Sell Q' + lastWin.sellQ + ')' : '')
+    + '. IDA adjustments reflect typical intraday spread widening.</p>'
+    + '<div style="overflow-x:auto"><table class="wf-table"><thead><tr>'
+    + '<th>Market</th><th>Gate Closure</th><th>Delivery</th><th>Buy ≤</th><th>Sell ≥</th><th>Notes</th>'
+    + '</tr></thead><tbody>' + mkRows + '</tbody></table></div>'
+    + '<h6 style="color:var(--accent);margin:1.2rem 0 .5rem">🕑 Hourly Action Plan (test-set patterns)</h6>'
+    + '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.5rem">Shows how often each hour triggered charge/discharge in backtest. Guide for continuous trading.</p>'
+    + '<div style="overflow-x:auto"><table class="wf-table"><thead><tr>'
+    + '<th>Hour</th><th>Action</th><th>Charge %</th><th>Disch %</th><th>Avg Buy €</th><th>Avg Sell €</th><th>Signal</th>'
+    + '</tr></thead><tbody>' + hourRows + '</tbody></table></div>';
+  el.innerHTML += ''
+    + '<div style="margin-top:1rem;padding:.7rem;border:1px solid var(--border);border-radius:6px;background:rgba(99,102,241,.06)">'
+    + '<strong style="color:var(--accent)">How to use these suggestions:</strong>'
+    + '<ol style="margin:.4rem 0 0 1.2rem;color:var(--muted);font-size:.78rem">'
+    + '<li><strong>DA Auction</strong> — Submit volume bids at the Buy threshold for charging hours, and offers at Sell threshold for discharging hours.</li>'
+    + '<li><strong>IDA1/IDA2</strong> — Adjust DA position using widened thresholds. If DA cleared below buy threshold, hold; if above, adjust in IDA.</li>'
+    + '<li><strong>IDA3</strong> — Only covers 12:00–24:00. Use wider thresholds due to higher volatility and thinner liquidity.</li>'
+    + '<li><strong>Continuous</strong> — Use hourly action plan for optimal trading windows. Place limit orders at threshold levels.</li>'
+    + '</ol></div>';
+}
+
+// Init split bar
+updateSplitBar();
+</script>
+</body>
 </html>
 <!DOCTYPE html>
 <html lang="en">
