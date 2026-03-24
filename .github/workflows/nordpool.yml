@@ -62,5 +62,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update Nord Pool datasets [skip ci]"
+          git commit -m "Update Nord Pool datasets"
           git push
