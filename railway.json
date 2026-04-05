@@ -4,7 +4,6 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port $POhRT --server.fileWatcherType none --browser.gatherUsageStats false --client.toolbarMode minimal"
+    "startCommand": "streamlit run streamlit_app.py --server.address 0.0.0.0 --server.fileWatcherType none --browser.gatherUsageStats false --client.toolbarMode minimal"
   }
 }
-
