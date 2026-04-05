@@ -40,8 +40,6 @@ def load_data(filename):
     )
     filepath = os.path.join(data_dir, filename)
     df = pd.read_csv(filepath)
-    # Parse as UTC first (handles mixed +01:00/+02:00 offsets around DST),
-    # then convert to Europe/Paris so hour/date reflect local CET/CEST wall-clock time.
     df["deliveryStartCET"] = (
         pd.to_datetime(df["deliveryStartCET"], utc=True).dt.tz_convert("Europe/Paris")
     )
@@ -55,15 +53,12 @@ def filter_by_date_range(df, date_range, custom_start=None, custom_end=None):
     """Filter dataframe by date range."""
     if date_range == "All dates":
         return df
-
     if date_range == "Custom range":
         if custom_start is None or custom_end is None:
             return df
         start_ts = pd.Timestamp(custom_start, tz="Europe/Paris")
-        # include end date fully (add 1 day)
         end_ts = pd.Timestamp(custom_end, tz="Europe/Paris") + pd.Timedelta(days=1)
         return df[(df["deliveryStartCET"] >= start_ts) & (df["deliveryStartCET"] < end_ts)]
-
     max_date = df["deliveryStartCET"].max()
     if date_range == "Last 1 week":
         min_date = max_date - timedelta(days=7)
@@ -75,7 +70,6 @@ def filter_by_date_range(df, date_range, custom_start=None, custom_end=None):
         min_date = max_date - timedelta(days=60)
     else:
         return df
-
     return df[df["deliveryStartCET"] >= min_date]
 
 
@@ -91,7 +85,6 @@ def filter_by_day_type(df, day_filter):
 
 
 def _fmt_hour(h):
-    """Format an absolute hour index (0..47) as HH:00, with '+1d' if past midnight."""
     h = int(h) % 48
     if h >= 24:
         return f"{h - 24:02d}:00 +1d"
@@ -99,7 +92,6 @@ def _fmt_hour(h):
 
 
 def _fmt_window(start, length):
-    """Format a time window like '22:00 → 02:00 +1d'."""
     end = int(start) + int(length)
     return f"{_fmt_hour(start)} → {_fmt_hour(end)}"
 
@@ -127,7 +119,6 @@ def _stats_from_daily(daily_pnl):
 
 
 def _format_schedule(cycles_list, charge_hours, discharge_hours):
-    """Format a list of (buy_start, sell_start) cycles into a human label."""
     ch, dis = charge_hours, discharge_hours
     if len(cycles_list) == 1:
         b, s = cycles_list[0]
@@ -140,11 +131,7 @@ def _format_schedule(cycles_list, charge_hours, discharge_hours):
 
 @st.cache_data
 def _build_price_matrix(df):
-    """Build a (dates, D×24 price matrix) from a dataframe with date/hour/price cols.
-
-    Cached by Streamlit so repeated calls with the same underlying df do not
-    re-run the groupby/pivot.
-    """
+    """Build a (dates, D×24 price matrix) from a dataframe."""
     if len(df) == 0:
         return [], np.zeros((0, 24))
     pivot = df.groupby(["date", "hour"])["price"].mean().unstack()
@@ -156,24 +143,71 @@ def _build_price_matrix(df):
     return dates, mat
 
 
+def apply_fixed_strategy(
+    cycle_list, buy_dates, buy_mat, sell_dates, sell_mat,
+    ch, dis, E_in, E_out, fixed_cost_per_cycle,
+):
+    """Apply a fixed schedule (known buy/sell windows) to price matrices.
+
+    Returns (daily_pnl array, list_of_valid_dates).
+    Works for both same-day and overnight schedules.
+    """
+    buy_idx = {d: i for i, d in enumerate(buy_dates)}
+    sell_idx = {d: i for i, d in enumerate(sell_dates)}
+    common = sorted(set(buy_idx.keys()) & set(sell_idx.keys()))
+    if not common:
+        return np.array([]), []
+
+    D = len(common)
+    b_order = [buy_idx[d] for d in common]
+    s_order = [sell_idx[d] for d in common]
+    buy24 = buy_mat[b_order]
+    sell24 = sell_mat[s_order]
+
+    overnight = any(
+        b >= 24 or s >= 24 or b + ch > 24 or s + dis > 24
+        for b, s in cycle_list
+    )
+
+    if overnight and D >= 2:
+        eff_D = D - 1
+        buy_ext = np.full((eff_D, 48), np.nan)
+        sell_ext = np.full((eff_D, 48), np.nan)
+        buy_ext[:, :24] = buy24[:-1]
+        buy_ext[:, 24:] = buy24[1:]
+        sell_ext[:, :24] = sell24[:-1]
+        sell_ext[:, 24:] = sell24[1:]
+        mat_b, mat_s = buy_ext, sell_ext
+        eff_dates = common[:-1]
+    elif overnight and D < 2:
+        return np.array([]), []
+    else:
+        mat_b, mat_s = buy24, sell24
+        eff_D, eff_dates = D, common
+
+    daily_pnl = np.zeros(eff_D)
+    valid = np.ones(eff_D, dtype=bool)
+
+    for b, s in cycle_list:
+        buy_win = mat_b[:, b: b + ch]
+        sell_win = mat_s[:, s: s + dis]
+        valid &= (~np.isnan(buy_win).any(axis=1)) & (~np.isnan(sell_win).any(axis=1))
+        ab = np.nanmean(buy_win, axis=1)
+        sv = np.nanmean(sell_win, axis=1)
+        daily_pnl += sv * E_out - ab * E_in - fixed_cost_per_cycle
+
+    return daily_pnl[valid], [d for d, v in zip(eff_dates, valid) if v]
+
+
 def _enumerate_schedules(
     buy_ext, sell_ext, max_hour, ch, dis, max_cycles,
     E_in, E_out, fixed_cost_per_cycle, top_per_k,
     midnight_mode, overnight_allow_k1_any_order,
 ):
-    """Pure-numpy enumeration of K-cycle schedules for a prebuilt (eff_days × max_hour)
-    pair of buy/sell matrices. No recursion into optimize_battery.
-
-    midnight_mode:
-        "none"     → no filter (same-day schedules on a 24h matrix)
-        "required" → at least one window must straddle hour 24 and not all on day 2
-                     (used when enumerating on a 48h extended matrix)
-    """
     eff_days = buy_ext.shape[0]
     if eff_days == 0:
         return []
 
-    # Precompute window averages once
     buy_win_avg = {}
     for b in range(max_hour - ch + 1):
         sub = buy_ext[:, b:b + ch]
@@ -206,7 +240,6 @@ def _enumerate_schedules(
 
     out = []
 
-    # ---- K = 1: either-order non-overlapping (supports sell-then-buy) ----
     if max_cycles >= 1:
         k1 = []
         for b in range(max_hour - ch + 1):
@@ -234,7 +267,6 @@ def _enumerate_schedules(
         k1.sort(key=lambda r: r["sharpe"], reverse=True)
         out.extend(k1[:top_per_k])
 
-    # ---- K >= 2: chronological enumeration with pruning ----
     def recurse(K_target, next_start, partial, partial_valid, partial_pnl, out_list):
         remaining = K_target - len(partial)
         if remaining == 0:
@@ -282,26 +314,11 @@ def _enumerate_schedules(
 
 
 def optimize_battery(
-    buy_dates,
-    buy_mat,
-    sell_dates,
-    sell_mat,
-    capacity_mw,
-    charge_hours,
-    discharge_hours,
-    max_cycles=1,
-    allow_overnight=False,
-    rte=1.0,
-    degradation_eur_mwh=0.0,
-    fee_eur_mwh=0.0,
-    top_per_k=200,
+    buy_dates, buy_mat, sell_dates, sell_mat,
+    capacity_mw, charge_hours, discharge_hours,
+    max_cycles=1, allow_overnight=False,
+    rte=1.0, degradation_eur_mwh=0.0, fee_eur_mwh=0.0, top_per_k=200,
 ):
-    """
-    Optimize K = 1..max_cycles battery schedules from pre-built price matrices.
-
-    buy_mat / sell_mat: (D × 24) numpy arrays indexed by buy_dates / sell_dates.
-    """
-    # Align on common dates
     buy_idx = {d: i for i, d in enumerate(buy_dates)}
     sell_idx = {d: i for i, d in enumerate(sell_dates)}
     common = sorted(set(buy_idx.keys()) & set(sell_idx.keys()))
@@ -319,18 +336,14 @@ def optimize_battery(
     fixed_cost_per_cycle = degradation_eur_mwh * E_out + fee_eur_mwh * (E_in + E_out)
 
     all_results = []
-
-    # Same-day enumeration on 24h matrix (always run)
     all_results.extend(
         _enumerate_schedules(
             buy24, sell24, 24, ch, dis, max_cycles,
             E_in, E_out, fixed_cost_per_cycle, top_per_k,
-            midnight_mode="none",
-            overnight_allow_k1_any_order=True,
+            midnight_mode="none", overnight_allow_k1_any_order=True,
         )
     )
 
-    # Overnight enumeration on 48h extended matrix (added on top)
     if allow_overnight and D >= 2:
         buy48 = np.full((D - 1, 48), np.nan)
         sell48 = np.full((D - 1, 48), np.nan)
@@ -342,8 +355,7 @@ def optimize_battery(
             _enumerate_schedules(
                 buy48, sell48, 48, ch, dis, max_cycles,
                 E_in, E_out, fixed_cost_per_cycle, top_per_k,
-                midnight_mode="required",
-                overnight_allow_k1_any_order=True,
+                midnight_mode="required", overnight_allow_k1_any_order=True,
             )
         )
 
@@ -351,20 +363,21 @@ def optimize_battery(
         return pd.DataFrame()
 
     results_df = pd.DataFrame(all_results)
-    # Back-compat columns for the Sharpe heatmap (K=1 rows only)
-    def _bs_from_cycle(row, idx, which):
+
+  2 def _bs_from_cycle(row, idx, which):
         cl = row.get("cycle_list")
         if isinstance(cl, list) and len(cl) > idx:
             return cl[idx][0] if which == "b" else cl[idx][1]
         return np.nan
+
     results_df["buy_start"] = results_df.apply(lambda r: _bs_from_cycle(r, 0, "b"), axis=1)
     results_df["sell_start"] = results_df.apply(lambda r: _bs_from_cycle(r, 0, "s"), axis=1)
     return results_df.sort_values("sharpe", ascending=False).reset_index(drop=True)
 
 
-def create_sharpe_heatmap(results_df):
-    """Create heatmap of Sharpe ratios across buy/sell hours (1-cycle, same-day only)."""
-    # Only makes sense for 1-cycle strategies with starts inside a single day
+# ── Chart helpers ─────────────────────────────────────────────────────────────
+
+def create_sharpe_heatmap(results_df, title_suffix=""):
     if "cycles" in results_df.columns:
         one_cycle = results_df[results_df["cycles"] == 1]
     else:
@@ -373,115 +386,127 @@ def create_sharpe_heatmap(results_df):
 
     heatmap_data = np.full((24, 24), np.nan)
     for _, row in one_cycle.iterrows():
-        buy_start = int(row["buy_start"])
-        sell_start = int(row["sell_start"])
-        heatmap_data[buy_start, sell_start] = row["sharpe"]
+        heatmap_data[int(row["buy_start"]), int(row["sell_start"])] = row["sharpe"]
 
-    fig = go.Figure(
-        data=go.Heatmap(
-            z=heatmap_data,
-            x=list(range(24)),
-            y=list(range(24)),
-            colorscale="RdYlGn",
-            text=np.round(heatmap_data, 2),
-            texttemplate="%{text:.2f}",
-            textfont={"size": 8},
-            colorbar=dict(title="Sharpe Ratio"),
-        )
-    )
-
+    fig = go.Figure(data=go.Heatmap(
+        z=heatmap_data,
+        x=list(range(24)), y=list(range(24)),
+        colorscale="RdYlGn",
+        text=np.round(heatmap_data, 2),
+        texttemplate="%{text:.2f}",
+        textfont={"size": 8},
+        colorbar=dict(title="Sharpe"),
+    ))
     fig.update_layout(
-        title="Sharpe Ratio Heatmap: Buy Hour vs Sell Hour",
-        xaxis_title="Sell Start Hour",
-        yaxis_title="Buy Start Hour",
-        height=CHART_CONFIG["height"],
-        margin=CHART_CONFIG["margin"],
+        title=f"Sharpe Heatmap: Buy vs Sell Hour{title_suffix}",
+        xaxis_title="Sell Start Hour", yaxis_title="Buy Start Hour",
+        height=CHART_CONFIG["height"], margin=CHART_CONFIG["margin"],
         hovermode="closest",
     )
-
     return fig
 
 
-def create_cumulative_pnl_chart(results_df, top_n=3):
-    """Create cumulative P&L chart for top strategies."""
+def create_train_test_cumulative_chart(train_pnl, test_pnl, n_train_days, n_test_days):
     fig = go.Figure()
 
-    for idx in range(min(top_n, len(results_df))):
-        row = results_df.iloc[idx]
-        daily_pnl = row["daily_pnl"]
-        cumulative_pnl = np.cumsum(daily_pnl)
+    train_cumsum = np.cumsum(train_pnl)
+    fig.add_trace(go.Scatter(
+        x=list(range(len(train_pnl))),
+        y=train_cumsum,
+        mode="lines",
+        name=f"Train ({n_train_days}d — in-sample)",
+        line=dict(width=2.5, color=PALETTE["primary"][2]),
+        fill="tozeroy",
+        fillcolor="rgba(25, 118, 210, 0.08)",
+    ))
 
-        label = row.get("schedule", f"Strategy {idx+1}")
-
-        fig.add_trace(
-            go.Scatter(
-                y=cumulative_pnl,
-                mode="lines",
-                name=f"#{idx+1}: {label}",
-                line=dict(width=2, color=PALETTE["primary"][idx]),
-            )
+    if len(test_pnl) > 0:
+        offset = train_cumsum[-1] if len(train_cumsum) > 0 else 0
+        test_cumsum = np.cumsum(test_pnl) + offset
+        test_x = list(range(len(train_pnl), len(train_pnl) + len(test_pnl)))
+        fig.add_trace(go.Scatter(
+            x=test_x, y=test_cumsum,
+            mode="lines",
+            name=f"Test ({n_test_days}d — out-of-sample)",
+            line=dict(width=2.5, color=PALETTE["accent"][2]),
+            fill="tozeroy",
+            fillcolor="rgba(245, 124, 0, 0.08)",
+        ))
+        fig.add_vline(
+            x=len(train_pnl) - 0.5,
+            line=dict(color="grey", width=1.5, dash="dash"),
+            annotation_text="Train | Test",
+            annotation_position="top",
+            annotation_font_size=11,
         )
 
     fig.update_layout(
-        title="Cumulative P&L: Top 3 Strategies",
-        yaxis_title="Cumulative P&L (EUR)",
-        xaxis_title="Days",
-        height=CHART_CONFIG["height"],
-        margin=CHART_CONFIG["margin"],
+        title="Cumulative P&L — Train vs Test (Best Strategy)",
+        yaxis_title="Cumulative P&L (EUR)", xaxis_title="Days",
+        height=CHART_CONFIG["height"], margin=CHART_CONFIG["margin"],
         hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
-
     return fig
 
 
-def create_daily_pnl_chart(daily_pnl):
-    """Create bar chart of daily P&L."""
-    colors = [
-        PALETTE["green"][2] if x >= 0 else PALETTE["accent"][2] for x in daily_pnl
-    ]
+def create_daily_pnl_chart(train_pnl, test_pnl=None):
+    fig = go.Figure()
 
-    fig = go.Figure(
-        data=go.Bar(y=daily_pnl, marker_color=colors, text=np.round(daily_pnl, 0))
-    )
+    train_colors = [PALETTE["green"][2] if x >= 0 else PALETTE["accent"][2] for x in train_pnl]
+    fig.add_trace(go.Bar(
+        x=list(range(len(train_pnl))),
+        y=train_pnl,
+        marker_color=train_colors,
+        name="Train",
+        showlegend=(test_pnl is not None and len(test_pnl) > 0),
+    ))
+
+    if test_pnl is not None and len(test_pnl) > 0:
+        n_train = len(train_pnl)
+        test_colors = [PALETTE["green"][3] if x >= 0 else PALETTE["accent"][3] for x in test_pnl]
+        fig.add_trace(go.Bar(
+            x=list(range(n_train, n_train + len(test_pnl))),
+            y=test_pnl,
+            marker_color=test_colors,
+            name="Test",
+            opacity=0.75,
+        ))
+        fig.add_vline(
+            x=n_train - 0.5,
+            line=dict(color="grey", width=1.5, dash="dash"),
+            annotation_text="Train | Test",
+            annotation_position="top",
+            annotation_font_size=11,
+        )
 
     fig.update_layout(
-        title="Daily P&L: Optimal Strategy #1",
-        yaxis_title="P&L (EUR)",
-        xaxis_title="Day",
-        height=CHART_CONFIG["height"],
-        margin=CHART_CONFIG["margin"],
-        showlegend=False,
+        title="Daily P&L — Best Strategy",
+        yaxis_title="P&L (EUR)", xaxis_title="Day",
+        height=CHART_CONFIG["height"], margin=CHART_CONFIG["margin"],
+        barmode="overlay",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
-
     return fig
 
 
 def create_hourly_profile(df, price_column):
-    """Create average hourly price profile."""
     hourly_avg = df.groupby("hour")[price_column].mean().reset_index()
-
-    fig = go.Figure(
-        data=go.Bar(
-            x=hourly_avg["hour"],
-            y=hourly_avg[price_column],
-            marker_color=PALETTE["primary"][2],
-        )
-    )
-
+    fig = go.Figure(data=go.Bar(
+        x=hourly_avg["hour"], y=hourly_avg[price_column],
+        marker_color=PALETTE["primary"][2],
+    ))
     fig.update_layout(
         title="Average Price by Hour of Day",
-        xaxis_title="Hour of Day",
-        yaxis_title="Price (EUR/MWh)",
-        height=CHART_CONFIG["height"],
-        margin=CHART_CONFIG["margin"],
+        xaxis_title="Hour of Day", yaxis_title="Price (EUR/MWh)",
+        height=CHART_CONFIG["height"], margin=CHART_CONFIG["margin"],
         showlegend=False,
     )
-
     return fig
 
 
 # ============================================================================
-# SIDEBAR CONTROLS
+# SIDEBAR
 # ============================================================================
 
 st.sidebar.title("⚙️ Battery Optimizer Settings")
@@ -490,58 +515,31 @@ capacity_mw = st.sidebar.number_input(
     "Battery Capacity (MW)", min_value=0.1, max_value=100.0, value=1.0, step=0.1
 )
 
-charge_hours = st.sidebar.slider(
-    "Charge Duration (hours)", min_value=1, max_value=8, value=4
-)
-
-discharge_hours = st.sidebar.slider(
-    "Discharge Duration (hours)", min_value=1, max_value=8, value=4
-)
+charge_hours = st.sidebar.slider("Charge Duration (hours)", min_value=1, max_value=8, value=4)
+discharge_hours = st.sidebar.slider("Discharge Duration (hours)", min_value=1, max_value=8, value=4)
 
 max_cycles = st.sidebar.slider(
-    "Max cycles per day",
-    min_value=1,
-    max_value=6,
-    value=1,
-    help="Maximum number of complete charge/discharge cycles per day. The "
-         "optimizer searches all schedules with 1..max cycles and ranks them "
-         "together so you can compare single vs. multi-cycle strategies.",
+    "Max cycles per day", min_value=1, max_value=6, value=1,
+    help="Maximum number of complete charge/discharge cycles per day.",
 )
 
 allow_overnight = st.sidebar.checkbox(
-    "Allow cross-day (overnight) cycles",
-    value=False,
-    help="If enabled, cycles may straddle midnight — e.g. buy 22:00–02:00, "
-         "sell 06:00–10:00 next day.",
+    "Allow cross-day (overnight) cycles", value=False,
+    help="Cycles may straddle midnight — e.g. buy 22:00–02:00, sell 06:00–10:00 next day.",
 )
 
 with st.sidebar.expander("⚙️ Advanced: costs & efficiency", expanded=False):
     rte_pct = st.number_input(
-        "Round-trip efficiency (%)",
-        min_value=50.0,
-        max_value=100.0,
-        value=100.0,
-        step=1.0,
-        help="Energy delivered ÷ energy charged. A 1 MWh charge delivers RTE×1 MWh "
-             "on discharge. Default 100% = no loss.",
+        "Round-trip efficiency (%)", min_value=50.0, max_value=100.0, value=100.0, step=1.0,
+        help="Energy delivered ÷ energy charged. Default 100% = no loss.",
     )
     degradation_eur_mwh = st.number_input(
-        "Degradation cost (€ / MWh discharged)",
-        min_value=0.0,
-        max_value=100.0,
-        value=0.0,
-        step=0.5,
-        help="Wear-and-tear cost charged per MWh of discharged energy. "
-             "Common values 2–10 €/MWh. Default 0.",
+        "Degradation cost (€/MWh discharged)", min_value=0.0, max_value=100.0, value=0.0, step=0.5,
+        help="Wear-and-tear cost per MWh discharged. Common values 2–10 €/MWh.",
     )
     fee_eur_mwh = st.number_input(
-        "Exchange fees (€ / MWh traded)",
-        min_value=0.0,
-        max_value=20.0,
-        value=0.0,
-        step=0.05,
-        help="Per-MWh exchange fee paid on BOTH the buy and sell legs. "
-             "Default 0.",
+        "Exchange fees (€/MWh traded)", min_value=0.0, max_value=20.0, value=0.0, step=0.05,
+        help="Per-MWh exchange fee paid on both buy and sell legs.",
     )
 rte = rte_pct / 100.0
 
@@ -549,39 +547,26 @@ selected_markets = st.sidebar.multiselect(
     "Markets to use",
     options=list(DATASETS.keys()),
     default=["DayAhead", "IDA1"],
-    help="Pick one or more Nord Pool markets. The optimizer will try every "
-         "combination of buy-market → sell-market across the selected set "
-         "(including buying and selling in the same market) and rank the best "
-         "strategies together. Select just one market to search intra-market "
-         "arbitrage; select multiple to search cross-market arbitrage.",
+    help="Pick one or more Nord Pool markets. The optimizer tries every buy→sell "
+         "combination and ranks strategies together.",
 )
 
 if not selected_markets:
     st.sidebar.warning("Select at least one market to run the optimizer.")
 
-area = st.sidebar.selectbox("Area", options=AREAS, index=4)  # GER = index 3
+area = st.sidebar.selectbox("Area", options=AREAS, index=4)
 
-day_filter = st.sidebar.selectbox(
-    "Day Filter", options=["All", "Weekdays", "Weekends"], index=0
-)
+day_filter = st.sidebar.selectbox("Day Filter", options=["All", "Weekdays", "Weekends"], index=0)
 
 date_range = st.sidebar.selectbox(
     "Date Range",
-    options=[
-        "All dates",
-        "Last 1 week",
-        "Last 2 weeks",
-        "Last 1 month",
-        "Last 2 months",
-        "Custom range",
-    ],
+    options=["All dates", "Last 1 week", "Last 2 weeks", "Last 1 month", "Last 2 months", "Custom range"],
     index=0,
 )
 
 custom_start = None
 custom_end = None
 if date_range == "Custom range":
-    # Peek at available dates from the first selected market to set sensible bounds
     _peek_market = selected_markets[0] if selected_markets else list(DATASETS.keys())[0]
     try:
         _peek_df = load_data(DATASETS[_peek_market][0])
@@ -592,12 +577,7 @@ if date_range == "Custom range":
         _max_avail = None
 
     default_end = _max_avail if _max_avail is not None else datetime.today().date()
-    default_start = (
-        _min_avail
-        if _min_avail is not None
-        else (default_end - timedelta(days=14))
-    )
-    # Default selection: last 2 weeks of available data
+    default_start = _min_avail if _min_avail is not None else (default_end - timedelta(days=14))
     default_range_start = max(default_start, default_end - timedelta(days=14))
 
     picked = st.sidebar.date_input(
@@ -609,8 +589,18 @@ if date_range == "Custom range":
     if isinstance(picked, tuple) and len(picked) == 2:
         custom_start, custom_end = picked
     else:
-        custom_start = picked
-        custom_end = picked
+        custom_start = custom_end = picked
+
+# ── Train / Test Split ─────────────────────────────────────────────────────
+st.sidebar.markdown("---")
+st.sidebar.subheader("📊 Train / Test Split")
+train_pct = st.sidebar.slider(
+    "Training data (%)",
+    min_value=50, max_value=90, value=70, step=5,
+    help="Chronological split: the first X% of dates find the optimal schedule "
+         "(in-sample training). The remaining (100−X)% validate it out-of-sample.",
+)
+st.sidebar.caption(f"Test (out-of-sample): {100 - train_pct}%")
 
 optimize_clicked = st.sidebar.button("🚀 Optimize", type="primary")
 
@@ -619,19 +609,17 @@ optimize_clicked = st.sidebar.button("🚀 Optimize", type="primary")
 # ============================================================================
 
 st.title("🔋 Battery Optimizer")
-st.markdown(
-    "Discover optimal buy/sell schedules across Nord Pool electricity markets"
-)
+st.markdown("Discover optimal buy/sell schedules across Nord Pool electricity markets")
 
 if optimize_clicked:
     if not selected_markets:
         st.error("Please select at least one market in the sidebar.")
         st.stop()
 
-    with st.spinner("Loading data and optimizing across markets..."):
-        # Load and prepare each selected market once, then build its price matrix once
+    with st.spinner("Loading data and running optimisation…"):
+
+        # ── Load & filter ──────────────────────────────────────────────────
         market_dfs = {}
-        market_mats = {}
         for mkt in selected_markets:
             fname, pcol = DATASETS[mkt]
             df = load_data(fname)
@@ -641,26 +629,51 @@ if optimize_clicked:
             if pcol != "price":
                 df = df.rename(columns={pcol: "price"})
             market_dfs[mkt] = df
-            market_mats[mkt] = _build_price_matrix(df)
 
-        # Run optimization for every (buy_market, sell_market) ordered pair
-        # (same market on both sides is allowed — intra-market arbitrage)
-        combined = []
+        # ── Chronological train/test split on common dates ─────────────────
+        common_dates_all = sorted(
+            set.intersection(*[set(market_dfs[m]["date"].unique()) for m in selected_markets])
+        )
+        n_total = len(common_dates_all)
+        if n_total < 10:
+            st.error("Not enough data for a train/test split. Try a wider date range.")
+            st.stop()
+
+        n_train = max(5, int(round(n_total * train_pct / 100)))
+        train_date_set = set(common_dates_all[:n_train])
+        test_date_set = set(common_dates_all[n_train:])
+        has_test = len(test_date_set) > 0
+
+        train_start_d = min(train_date_set)
+        train_end_d = max(train_date_set)
+        test_start_d = min(test_date_set) if has_test else None
+        test_end_d = max(test_date_set) if has_test else None
+
+        # ── Build train / test price matrices per market ───────────────────
+        train_mats = {}
+        test_mats = {}
+        for mkt in selected_markets:
+            df = market_dfs[mkt]
+            train_mats[mkt] = _build_price_matrix(df[df["date"].isin(train_date_set)])
+            if has_test:
+                test_mats[mkt] = _build_price_matrix(df[df["date"].isin(test_date_set)])
+
+        # ── Cost constants ─────────────────────────────────────────────────
+        E_out = capacity_mw * discharge_hours
+        E_in = E_out / rte if rte > 0 else E_out
+        fixed_cost_per_cycle = degradation_eur_mwh * E_out + fee_eur_mwh * (E_in + E_out)
+
+        # ── Optimise on TRAIN data ─────────────────────────────────────────
+        combined_train = []
         for buy_market in selected_markets:
-            b_dates, b_mat = market_mats[buy_market]
+            b_dates, b_mat = train_mats[buy_market]
             for sell_market in selected_markets:
-                s_dates, s_mat = market_mats[sell_market]
+                s_dates, s_mat = train_mats[sell_market]
                 part = optimize_battery(
-                    b_dates, b_mat,
-                    s_dates, s_mat,
-                    capacity_mw,
-                    charge_hours,
-                    discharge_hours,
-                    max_cycles=max_cycles,
-                    allow_overnight=allow_overnight,
-                    rte=rte,
-                    degradation_eur_mwh=degradation_eur_mwh,
-                    fee_eur_mwh=fee_eur_mwh,
+                    b_dates, b_mat, s_dates, s_mat,
+                    capacity_mw, charge_hours, discharge_hours,
+                    max_cycles=max_cycles, allow_overnight=allow_overnight,
+                    rte=rte, degradation_eur_mwh=degradation_eur_mwh, fee_eur_mwh=fee_eur_mwh,
                 )
                 if len(part) == 0:
                     continue
@@ -671,190 +684,188 @@ if optimize_clicked:
                     buy_market if buy_market == sell_market
                     else f"{buy_market} → {sell_market}"
                 )
-                combined.append(part)
+                combined_train.append(part)
 
-        if combined:
-            results = (
-                pd.concat(combined, ignore_index=True)
-                .sort_values("sharpe", ascending=False)
-                .reset_index(drop=True)
+        if not combined_train:
+            st.error("No valid optimisation results. Try adjusting parameters.")
+            st.stop()
+
+        results = (
+            pd.concat(combined_train, ignore_index=True)
+            .sort_values("sharpe", ascending=False)
+            .reset_index(drop=True)
+        )
+
+        best = results.iloc[0]
+        train_stats = _stats_from_daily(best["daily_pnl"])
+
+        # ── Apply best strategy to TEST data ──────────────────────────────
+        test_stats = None
+        test_daily_pnl = np.array([])
+        if has_test:
+            bt_dates, bt_mat = test_mats[best["buy_market"]]
+            st_dates, st_mat = test_mats[best["sell_market"]]
+            test_daily_pnl, _ = apply_fixed_strategy(
+                best["cycle_list"],
+                bt_dates, bt_mat, st_dates, st_mat,
+                charge_hours, discharge_hours, E_in, E_out, fixed_cost_per_cycle,
             )
+            if len(test_daily_pnl) > 0:
+                test_stats = _stats_from_daily(test_daily_pnl)
+
+        # ================================================================
+        # PERIOD BANNER
+        # ================================================================
+        col_b1, col_b2 = st.columns(2)
+        with col_b1:
+            st.info(
+                f"**🟦 Train (in-sample):** {train_start_d} → {train_end_d}  "
+                f"({n_train} days, {train_pct}%)"
+            )
+        with col_b2:
+            if has_test and test_stats:
+                n_test_used = int(test_stats["num_days"])
+                st.warning(
+                    f"**🟧 Test (out-of-sample):** {test_start_d} → {test_end_d}  "
+                    f"({n_test_used} days, {100 - train_pct}%)"
+                )
+            else:
+                st.warning("No test data available for the selected range / split.")
+
+        # ================================================================
+        # BEST STRATEGY CARD
+        # ================================================================
+        schedule_text = f"**{best['market_pair']}:** {best['schedule']}"
+        annual_pnl = best["avg_daily_pnl"] * 365
+        st.info(
+            f"{schedule_text}\n\n"
+            f"**Area:** {area} | **Capacity:** {capacity_mw} MW | "
+            f"**Est. Annual P&L (train avg):** €{annual_pnl:,.0f}"
+        )
+
+        # ================================================================
+        # TRAIN vs TEST KPI COMPARISON
+        # ================================================================
+        st.divider()
+        st.subheader("Train vs Test Performance")
+
+        if test_stats:
+            col_train, col_test = st.columns(2)
+
+            with col_train:
+                st.markdown("### 🟦 Train (in-sample)")
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Total P&L", f"€{train_stats['total_pnl']:,.0f}")
+                c2.metric("Sharpe", f"{train_stats['sharpe']:.2f}")
+                c3.metric("Win Rate", f"{train_stats['win_rate']*100:.1f}%")
+                c4, c5, c6 = st.columns(3)
+                c4.metric("Avg Daily", f"€{train_stats['avg_daily_pnl']:,.0f}")
+                c5.metric("Max Drawdown", f"€{train_stats['max_dd']:,.0f}")
+                c6.metric("# Days", f"{int(train_stats['num_days'])}")
+
+            with col_test:
+                st.markdown("### 🟧 Test (out-of-sample)")
+                sharpe_delta = test_stats["sharpe"] - train_stats["sharpe"]
+                wr_delta = (test_stats["win_rate"] - train_stats["win_rate"]) * 100
+                avg_delta = test_stats["avg_daily_pnl"] - train_stats["avg_daily_pnl"]
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Total P&L", f"€{test_stats['total_pnl']:,.0f}")
+                c2.metric("Sharpe", f"{test_stats['sharpe']:.2f}", delta=f"{sharpe_delta:+.2f}")
+                c3.metric("Win Rate", f"{test_stats['win_rate']*100:.1f}%", delta=f"{wr_delta:+.1f}pp")
+                c4, c5, c6 = st.columns(3)
+                c4.metric("Avg Daily", f"€{test_stats['avg_daily_pnl']:,.0f}", delta=f"€{avg_delta:+,.0f}")
+                c5.metric("Max Drawdown", f"€{test_stats['max_dd']:,.0f}")
+                c6.metric("# Days", f"{int(test_stats['num_days'])}")
         else:
-            results = pd.DataFrame()
+            # Train-only KPIs
+            c1, c2, c3, c4, c5, c6 = st.columns(6)
+            c1.metric("Total P&L", f"€{train_stats['total_pnl']:,.0f}")
+            c2.metric("Sharpe", f"{train_stats['sharpe']:.2f}")
+            c3.metric("Max Drawdown", f"€{train_stats['max_dd']:,.0f}")
+            c4.metric("Win Rate", f"{train_stats['win_rate']*100:.1f}%")
+            c5.metric("Avg Daily", f"€{train_stats['avg_daily_pnl']:,.0f}")
+            c6.metric("# Days", f"{int(train_stats['num_days'])}")
 
-        if len(results) == 0:
-            st.error("No valid optimization results. Try adjusting parameters.")
-        else:
-            best_strategy = results.iloc[0]
+        # ================================================================
+        # HEATMAP + CUMULATIVE P&L
+        # ================================================================
+        st.divider()
+        st.subheader("Strategy Analysis")
 
-            # ================================================================
-            # TOP KPIs ROW
-            # ================================================================
-            col1, col2, col3, col4, col5, col6 = st.columns(6)
-
-            with col1:
-                st.metric(
-                    "Total P&L",
-                    f"€{best_strategy['total_pnl']:,.0f}",
-                )
-
-            with col2:
-                st.metric(
-                    "Sharpe Ratio",
-                    f"{best_strategy['sharpe']:.2f}",
-                )
-
-            with col3:
-                st.metric(
-                    "Max Drawdown",
-                    f"€{best_strategy['max_dd']:,.0f}",
-                )
-
-            with col4:
-                st.metric(
-                    "Win Rate",
-                    f"{best_strategy['win_rate']*100:.1f}%",
-                )
-
-            with col5:
-                st.metric(
-                    "Avg Daily P&L",
-                    f"€{best_strategy['avg_daily_pnl']:,.0f}",
-                )
-
-            with col6:
-                st.metric(
-                    "# Days",
-                    f"{int(best_strategy['num_days'])}",
-                )
-
-            # ================================================================
-            # OPTIMAL SCHEDULE CARD
-            # ================================================================
-            st.divider()
-
-            schedule_text = f"**{best_strategy['market_pair']}:** {best_strategy['schedule']}"
-
-            annual_pnl = best_strategy["avg_daily_pnl"] * 365
-
-            schedule_info = f"""
-            {schedule_text}
-
-            **Area:** {area} | **Capacity:** {capacity_mw} MW | **Est. Annual P&L:** €{annual_pnl:,.0f}
-            """
-
-            st.info(schedule_info)
-
-            # ================================================================
-            # TWO COLUMNS: HEATMAP + CUMULATIVE P&L
-            # ================================================================
-            st.divider()
-            st.subheader("Strategy Analysis")
-
-            col_heatmap, col_cumulative = st.columns(2)
-
-            with col_heatmap:
-                heatmap_fig = create_sharpe_heatmap(results)
-                st.plotly_chart(heatmap_fig, use_container_width=True)
-
-            with col_cumulative:
-                cumulative_fig = create_cumulative_pnl_chart(results, top_n=3)
-                st.plotly_chart(cumulative_fig, use_container_width=True)
-
-            # ================================================================
-            # TOP 10 STRATEGIES TABLE
-            # ================================================================
-            st.divider()
-            st.subheader("Top 10 Strategies")
-
-            top_10 = results.head(10).copy()
-            top_10["Rank"] = range(1, len(top_10) + 1)
-            top_10["Market"] = top_10["market_pair"]
-            top_10["Schedule"] = top_10["schedule"]
-            top_10["Cycles"] = top_10["cycles"].astype(int)
-            top_10["Total P&L"] = top_10["total_pnl"].apply(lambda x: f"€{x:,.0f}")
-            top_10["Sharpe"] = top_10["sharpe"].apply(lambda x: f"{x:.2f}")
-            top_10["Win Rate"] = top_10["win_rate"].apply(lambda x: f"{x*100:.0f}%")
-            top_10["Avg Daily"] = top_10["avg_daily_pnl"].apply(lambda x: f"€{x:,.0f}")
-            top_10["Max DD"] = top_10["max_dd"].apply(lambda x: f"€{x:,.0f}")
-
-            display_cols = [
-                "Rank",
-                "Market",
-                "Cycles",
-                "Schedule",
-                "Total P&L",
-                "Sharpe",
-                "Win Rate",
-                "Avg Daily",
-                "Max DD",
-            ]
-
-            st.dataframe(top_10[display_cols], use_container_width=True, hide_index=True)
-
-            # Download button for top strategies
-            csv_top = top_10[display_cols].to_csv(index=False)
-            st.download_button(
-                "📥 Download Top 10 Strategies",
-                csv_top,
-                file_name="top_strategies.csv",
-                mime="text/csv",
+        col_heatmap, col_cumulative = st.columns(2)
+        with col_heatmap:
+            st.plotly_chart(
+                create_sharpe_heatmap(results, title_suffix=" (Train)"),
+                use_container_width=True,
+            )
+        with col_cumulative:
+            n_test_used = int(test_stats["num_days"]) if test_stats else 0
+            st.plotly_chart(
+                create_train_test_cumulative_chart(
+                    best["daily_pnl"], test_daily_pnl, n_train, n_test_used
+                ),
+                use_container_width=True,
             )
 
-            # ================================================================
-            # DAILY P&L CHART
-            # ================================================================
-            st.divider()
-            st.subheader("Daily P&L: Strategy #1")
+        # ================================================================
+        # TOP 10 TABLE (train)
+        # ================================================================
+        st.divider()
+        st.subheader("Top 10 Strategies (Train)")
 
-            daily_pnl_fig = create_daily_pnl_chart(best_strategy["daily_pnl"])
-            st.plotly_chart(daily_pnl_fig, use_container_width=True)
+        top_10 = results.head(10).copy()
+        top_10["Rank"] = range(1, len(top_10) + 1)
+        top_10["Market"] = top_10["market_pair"]
+        top_10["Schedule"] = top_10["schedule"]
+        top_10["Cycles"] = top_10["cycles"].astype(int)
+        top_10["Total P&L"] = top_10["total_pnl"].apply(lambda x: f"€{x:,.0f}")
+        top_10["Sharpe"] = top_10["sharpe"].apply(lambda x: f"{x:.2f}")
+        top_10["Win Rate"] = top_10["win_rate"].apply(lambda x: f"{x*100:.0f}%")
+        top_10["Avg Daily"] = top_10["avg_daily_pnl"].apply(lambda x: f"€{x:,.0f}")
+        top_10["Max DD"] = top_10["max_dd"].apply(lambda x: f"€{x:,.0f}")
 
-            # ================================================================
-            # HOURLY PRICE PROFILE
-            # ================================================================
-            st.divider()
-            st.subheader("Hourly Price Profile")
+        display_cols = ["Rank", "Market", "Cycles", "Schedule", "Total P&L", "Sharpe", "Win Rate", "Avg Daily", "Max DD"]
+        st.dataframe(top_10[display_cols], use_container_width=True, hide_index=True)
 
-            profile_market = st.selectbox(
-                "Market to show",
-                options=selected_markets,
-                index=0,
-                key="_profile_market",
-            )
-            st.markdown(f"**Market:** {profile_market} | **Area:** {area}")
-            hourly_fig = create_hourly_profile(market_dfs[profile_market], "price")
-            st.plotly_chart(hourly_fig, use_container_width=True)
+        csv_top = top_10[display_cols].to_csv(index=False)
+        st.download_button("📥 Download Top 10 Strategies", csv_top,
+                           file_name="top_strategies.csv", mime="text/csv")
 
-            # ================================================================
-            # DOWNLOAD ALL RESULTS
-            # ================================================================
-            st.divider()
+        # ================================================================
+        # DAILY P&L CHART
+        # ================================================================
+        st.divider()
+        st.subheader("Daily P&L — Best Strategy")
 
-            # Prepare full results for download
-            download_df = results.copy()
+        st.plotly_chart(
+            create_daily_pnl_chart(best["daily_pnl"], test_daily_pnl if has_test else None),
+            use_container_width=True,
+        )
 
-            download_cols = [
-                "market_pair",
-                "cycles",
-                "schedule",
-                "total_pnl",
-                "sharpe",
-                "win_rate",
-                "avg_daily_pnl",
-                "max_dd",
-                "num_days",
-            ]
+        # ================================================================
+        # HOURLY PRICE PROFILE
+        # ================================================================
+        st.divider()
+        st.subheader("Hourly Price Profile")
 
-            csv_all = download_df[download_cols].to_csv(index=False)
-            st.download_button(
-                "📥 Download All Results",
-                csv_all,
-                file_name="all_strategies.csv",
-                mime="text/csv",
-            )
+        profile_market = st.selectbox(
+            "Market to show", options=selected_markets, index=0, key="_profile_market"
+        )
+        st.markdown(f"**Market:** {profile_market} | **Area:** {area}")
+        st.plotly_chart(
+            create_hourly_profile(market_dfs[profile_market], "price"),
+            use_container_width=True,
+        )
+
+        # ================================================================
+        # DOWNLOAD ALL RESULTS
+        # ================================================================
+        st.divider()
+        download_cols = ["market_pair", "cycles", "schedule", "total_pnl", "sharpe",
+                         "win_rate", "avg_daily_pnl", "max_dd", "num_days"]
+        csv_all = results[download_cols].to_csv(index=False)
+        st.download_button("📥 Download All Results", csv_all,
+                           file_name="all_strategies.csv", mime="text/csv")
+
 else:
-    st.info(
-        "👈 Configure settings in the sidebar and click **Optimize** to discover your optimal battery schedule."
-    )
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+    st.info("👈 Configure settings in the sidebar and click **Optimize** to discover your optimal battery schedule.")
