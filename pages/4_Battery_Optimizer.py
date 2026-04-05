@@ -7,7 +7,7 @@ import os
 from datetime import datetime, timedelta
 import io
 
-st.set_page_config(layout="wide", page_title="Battery Optimizer", page_icon="ð")
+st.set_page_config(layout="wide", page_title="Battery Optimizer", page_icon="🔋")
 
 # Color palette
 PALETTE = {
@@ -93,7 +93,7 @@ def _fmt_hour(h):
 
 def _fmt_window(start, length):
     end = int(start) + int(length)
-    return f"{_fmt_hour(start)} â {_fmt_hour(end)}"
+    return f"{_fmt_hour(start)} → {_fmt_hour(end)}"
 
 
 def _stats_from_daily(daily_pnl):
@@ -131,7 +131,7 @@ def _format_schedule(cycles_list, charge_hours, discharge_hours):
 
 @st.cache_data
 def _build_price_matrix(df):
-    """Build a (dates, DÃ24 price matrix) from a dataframe."""
+    """Build a (dates, D×24 price matrix) from a dataframe."""
     if len(df) == 0:
         return [], np.zeros((0, 24))
     pivot = df.groupby(["date", "hour"])["price"].mean().unstack()
@@ -375,7 +375,7 @@ def optimize_battery(
     return results_df.sort_values("sharpe", ascending=False).reset_index(drop=True)
 
 
-# ââ Chart helpers âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ── Chart helpers ─────────────────────────────────────────────────────────────
 
 def create_sharpe_heatmap(results_df, title_suffix=""):
     if "cycles" in results_df.columns:
@@ -414,7 +414,7 @@ def create_train_test_cumulative_chart(train_pnl, test_pnl, n_train_days, n_test
         x=list(range(len(train_pnl))),
         y=train_cumsum,
         mode="lines",
-        name=f"Train ({n_train_days}d â in-sample)",
+        name=f"Train ({n_train_days}d — in-sample)",
         line=dict(width=2.5, color=PALETTE["primary"][2]),
         fill="tozeroy",
         fillcolor="rgba(25, 118, 210, 0.08)",
@@ -427,7 +427,7 @@ def create_train_test_cumulative_chart(train_pnl, test_pnl, n_train_days, n_test
         fig.add_trace(go.Scatter(
             x=test_x, y=test_cumsum,
             mode="lines",
-            name=f"Test ({n_test_days}d â out-of-sample)",
+            name=f"Test ({n_test_days}d — out-of-sample)",
             line=dict(width=2.5, color=PALETTE["accent"][2]),
             fill="tozeroy",
             fillcolor="rgba(245, 124, 0, 0.08)",
@@ -441,7 +441,7 @@ def create_train_test_cumulative_chart(train_pnl, test_pnl, n_train_days, n_test
         )
 
     fig.update_layout(
-        title="Cumulative P&L â Train vs Test (Best Strategy)",
+        title="Cumulative P&L — Train vs Test (Best Strategy)",
         yaxis_title="Cumulative P&L (EUR)", xaxis_title="Days",
         height=CHART_CONFIG["height"], margin=CHART_CONFIG["margin"],
         hovermode="x unified",
@@ -481,7 +481,7 @@ def create_daily_pnl_chart(train_pnl, test_pnl=None):
         )
 
     fig.update_layout(
-        title="Daily P&L â Best Strategy",
+        title="Daily P&L — Best Strategy",
         yaxis_title="P&L (EUR)", xaxis_title="Day",
         height=CHART_CONFIG["height"], margin=CHART_CONFIG["margin"],
         barmode="overlay",
@@ -509,7 +509,7 @@ def create_hourly_profile(df, price_column):
 # SIDEBAR
 # ============================================================================
 
-st.sidebar.title("âï¸ Battery Optimizer Settings")
+st.sidebar.title("⚙️ Battery Optimizer Settings")
 
 capacity_mw = st.sidebar.number_input(
     "Battery Capacity (MW)", min_value=0.1, max_value=100.0, value=1.0, step=0.1
@@ -525,20 +525,20 @@ max_cycles = st.sidebar.slider(
 
 allow_overnight = st.sidebar.checkbox(
     "Allow cross-day (overnight) cycles", value=False,
-    help="Cycles may straddle midnight â e.g. buy 22:00â02:00, sell 06:00â10:00 next day.",
+    help="Cycles may straddle midnight — e.g. buy 22:00–02:00, sell 06:00–10:00 next day.",
 )
 
-with st.sidebar.expander("âï¸ Advanced: costs & efficiency", expanded=False):
+with st.sidebar.expander("⚙️ Advanced: costs & efficiency", expanded=False):
     rte_pct = st.number_input(
         "Round-trip efficiency (%)", min_value=50.0, max_value=100.0, value=100.0, step=1.0,
-        help="Energy delivered Ã· energy charged. Default 100% = no loss.",
+        help="Energy delivered ÷ energy charged. Default 100% = no loss.",
     )
     degradation_eur_mwh = st.number_input(
-        "Degradation cost (â¬/MWh discharged)", min_value=0.0, max_value=100.0, value=0.0, step=0.5,
-        help="Wear-and-tear cost per MWh discharged. Common values 2â10 â¬/MWh.",
+        "Degradation cost (€/MWh discharged)", min_value=0.0, max_value=100.0, value=0.0, step=0.5,
+        help="Wear-and-tear cost per MWh discharged. Common values 2–10 €/MWh.",
     )
     fee_eur_mwh = st.number_input(
-        "Exchange fees (â¬/MWh traded)", min_value=0.0, max_value=20.0, value=0.0, step=0.05,
+        "Exchange fees (€/MWh traded)", min_value=0.0, max_value=20.0, value=0.0, step=0.05,
         help="Per-MWh exchange fee paid on both buy and sell legs.",
     )
 rte = rte_pct / 100.0
@@ -547,7 +547,7 @@ selected_markets = st.sidebar.multiselect(
     "Markets to use",
     options=list(DATASETS.keys()),
     default=["DayAhead", "IDA1"],
-    help="Pick one or more Nord Pool markets. The optimizer tries every buyâsell "
+    help="Pick one or more Nord Pool markets. The optimizer tries every buy→sell "
          "combination and ranks strategies together.",
 )
 
@@ -591,24 +591,24 @@ if date_range == "Custom range":
     else:
         custom_start = custom_end = picked
 
-# ââ Train / Test Split âââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ── Train / Test Split ─────────────────────────────────────────────────────
 st.sidebar.markdown("---")
-st.sidebar.subheader("ð Train / Test Split")
+st.sidebar.subheader("📊 Train / Test Split")
 train_pct = st.sidebar.slider(
     "Training data (%)",
     min_value=50, max_value=90, value=70, step=5,
     help="Chronological split: the first X% of dates find the optimal schedule "
-         "(in-sample training). The remaining (100âX)% validate it out-of-sample.",
+         "(in-sample training). The remaining (100−X)% validate it out-of-sample.",
 )
 st.sidebar.caption(f"Test (out-of-sample): {100 - train_pct}%")
 
-optimize_clicked = st.sidebar.button("ð Optimize", type="primary")
+optimize_clicked = st.sidebar.button("🚀 Optimize", type="primary")
 
 # ============================================================================
 # MAIN CONTENT
 # ============================================================================
 
-st.title("ð Battery Optimizer")
+st.title("🔋 Battery Optimizer")
 st.markdown("Discover optimal buy/sell schedules across Nord Pool electricity markets")
 
 if optimize_clicked:
@@ -616,9 +616,9 @@ if optimize_clicked:
         st.error("Please select at least one market in the sidebar.")
         st.stop()
 
-    with st.spinner("Loading data and running optimisationâ¦"):
+    with st.spinner("Loading data and running optimisation…"):
 
-        # ââ Load & filter ââââââââââââââââââââââââââââââââââââââââââââââââââ
+        # ── Load & filter ──────────────────────────────────────────────────
         market_dfs = {}
         for mkt in selected_markets:
             fname, pcol = DATASETS[mkt]
@@ -630,7 +630,7 @@ if optimize_clicked:
                 df = df.rename(columns={pcol: "price"})
             market_dfs[mkt] = df
 
-        # ââ Chronological train/test split on common dates âââââââââââââââââ
+        # ── Chronological train/test split on common dates ─────────────────
         common_dates_all = sorted(
             set.intersection(*[set(market_dfs[m]["date"].unique()) for m in selected_markets])
         )
@@ -649,7 +649,7 @@ if optimize_clicked:
         test_start_d = min(test_date_set) if has_test else None
         test_end_d = max(test_date_set) if has_test else None
 
-        # ââ Build train / test price matrices per market âââââââââââââââââââ
+        # ── Build train / test price matrices per market ───────────────────
         train_mats = {}
         test_mats = {}
         for mkt in selected_markets:
@@ -658,12 +658,12 @@ if optimize_clicked:
             if has_test:
                 test_mats[mkt] = _build_price_matrix(df[df["date"].isin(test_date_set)])
 
-        # ââ Cost constants âââââââââââââââââââââââââââââââââââââââââââââââââ
+        # ── Cost constants ─────────────────────────────────────────────────
         E_out = capacity_mw * discharge_hours
         E_in = E_out / rte if rte > 0 else E_out
         fixed_cost_per_cycle = degradation_eur_mwh * E_out + fee_eur_mwh * (E_in + E_out)
 
-        # ââ Optimise on TRAIN data âââââââââââââââââââââââââââââââââââââââââ
+        # ── Optimise on TRAIN data ─────────────────────────────────────────
         combined_train = []
         for buy_market in selected_markets:
             b_dates, b_mat = train_mats[buy_market]
@@ -682,7 +682,7 @@ if optimize_clicked:
                 part["sell_market"] = sell_market
                 part["market_pair"] = (
                     buy_market if buy_market == sell_market
-                    else f"{buy_market} â {sell_market}"
+                    else f"{buy_market} → {sell_market}"
                 )
                 combined_train.append(part)
 
@@ -699,7 +699,7 @@ if optimize_clicked:
         best = results.iloc[0]
         train_stats = _stats_from_daily(best["daily_pnl"])
 
-        # ââ Apply best strategy to TEST data ââââââââââââââââââââââââââââââ
+        # ── Apply best strategy to TEST data ─────────────────────────────
         test_stats = None
         test_daily_pnl = np.array([])
         if has_test:
@@ -719,20 +719,20 @@ if optimize_clicked:
         col_b1, col_b2 = st.columns(2)
         with col_b1:
             st.info(
-                f"**ð¦ Train (in-sample):** {train_start_d} â {train_end_d}  "
+                f"**🟦 Train (in-sample):** {train_start_d} → {train_end_d}  "
                 f"({n_train} days, {train_pct}%)"
             )
         with col_b2:
             if has_test and test_stats:
                 n_test_used = int(test_stats["num_days"])
                 st.warning(
-                    f"**ð§ Test (out-of-sample):** {test_start_d} â {test_end_d}  "
+                    f"**🟧 Test (out-of-sample):** {test_start_d} → {test_end_d}  "
                     f"({n_test_used} days, {100 - train_pct}%)"
                 )
             else:
                 st.warning("No test data available for the selected range / split.")
 
-        # ================================================================
+        # ===================================================================
         # BEST STRATEGY CARD
         # ================================================================
         schedule_text = f"**{best['market_pair']}:** {best['schedule']}"
@@ -740,7 +740,7 @@ if optimize_clicked:
         st.info(
             f"{schedule_text}\n\n"
             f"**Area:** {area} | **Capacity:** {capacity_mw} MW | "
-            f"**Est. Annual P&L (train avg):** â¬{annual_pnl:,.0f}"
+            f"**Est. Annual P&L (train avg):** €{annual_pnl:,.0f}"
         )
 
         # ================================================================
@@ -753,37 +753,37 @@ if optimize_clicked:
             col_train, col_test = st.columns(2)
 
             with col_train:
-                st.markdown("### ð¦ Train (in-sample)")
+                st.markdown("### 🟦 Train (in-sample)")
                 c1, c2, c3 = st.columns(3)
-                c1.metric("Total P&L", f"â¬{train_stats['total_pnl']:,.0f}")
+                c1.metric("Total P&L", f"€{train_stats['total_pnl']:,.0f}")
                 c2.metric("Sharpe", f"{train_stats['sharpe']:.2f}")
                 c3.metric("Win Rate", f"{train_stats['win_rate']*100:.1f}%")
                 c4, c5, c6 = st.columns(3)
-                c4.metric("Avg Daily", f"â¬{train_stats['avg_daily_pnl']:,.0f}")
-                c5.metric("Max Drawdown", f"â¬{train_stats['max_dd']:,.0f}")
+                c4.metric("Avg Daily", f"€{train_stats['avg_daily_pnl']:,.0f}")
+                c5.metric("Max Drawdown", f"€{train_stats['max_dd']:,.0f}")
                 c6.metric("# Days", f"{int(train_stats['num_days'])}")
 
             with col_test:
-                st.markdown("### ð§ Test (out-of-sample)")
+                st.markdown("### 🟧 Test (out-of-sample)")
                 sharpe_delta = test_stats["sharpe"] - train_stats["sharpe"]
                 wr_delta = (test_stats["win_rate"] - train_stats["win_rate"]) * 100
                 avg_delta = test_stats["avg_daily_pnl"] - train_stats["avg_daily_pnl"]
                 c1, c2, c3 = st.columns(3)
-                c1.metric("Total P&L", f"â¬{test_stats['total_pnl']:,.0f}")
+                c1.metric("Total P&L", f"€{test_stats['total_pnl']:,.0f}")
                 c2.metric("Sharpe", f"{test_stats['sharpe']:.2f}", delta=f"{sharpe_delta:+.2f}")
                 c3.metric("Win Rate", f"{test_stats['win_rate']*100:.1f}%", delta=f"{wr_delta:+.1f}pp")
                 c4, c5, c6 = st.columns(3)
-                c4.metric("Avg Daily", f"â¬{test_stats['avg_daily_pnl']:,.0f}", delta=f"â¬{avg_delta:+,.0f}")
-                c5.metric("Max Drawdown", f"â¬{test_stats['max_dd']:,.0f}")
+                c4.metric("Avg Daily", f"€{test_stats['avg_daily_pnl']:,.0f}", delta=f"€{avg_delta:+,.0f}")
+                c5.metric("Max Drawdown", f"€{test_stats['max_dd']:,.0f}")
                 c6.metric("# Days", f"{int(test_stats['num_days'])}")
         else:
             # Train-only KPIs
             c1, c2, c3, c4, c5, c6 = st.columns(6)
-            c1.metric("Total P&L", f"â¬{train_stats['total_pnl']:,.0f}")
+            c1.metric("Total P&L", f"€{train_stats['total_pnl']:,.0f}")
             c2.metric("Sharpe", f"{train_stats['sharpe']:.2f}")
-            c3.metric("Max Drawdown", f"â¬{train_stats['max_dd']:,.0f}")
+            c3.metric("Max Drawdown", f"€{train_stats['max_dd']:,.0f}")
             c4.metric("Win Rate", f"{train_stats['win_rate']*100:.1f}%")
-            c5.metric("Avg Daily", f"â¬{train_stats['avg_daily_pnl']:,.0f}")
+            c5.metric("Avg Daily", f"€{train_stats['avg_daily_pnl']:,.0f}")
             c6.metric("# Days", f"{int(train_stats['num_days'])}")
 
         # ================================================================
@@ -818,24 +818,24 @@ if optimize_clicked:
         top_10["Market"] = top_10["market_pair"]
         top_10["Schedule"] = top_10["schedule"]
         top_10["Cycles"] = top_10["cycles"].astype(int)
-        top_10["Total P&L"] = top_10["total_pnl"].apply(lambda x: f"â¬{x:,.0f}")
+        top_10["Total P&L"] = top_10["total_pnl"].apply(lambda x: f"€{x:,.0f}")
         top_10["Sharpe"] = top_10["sharpe"].apply(lambda x: f"{x:.2f}")
         top_10["Win Rate"] = top_10["win_rate"].apply(lambda x: f"{x*100:.0f}%")
-        top_10["Avg Daily"] = top_10["avg_daily_pnl"].apply(lambda x: f"â¬{x:,.0f}")
-        top_10["Max DD"] = top_10["max_dd"].apply(lambda x: f"â¬{x:,.0f}")
+        top_10["Avg Daily"] = top_10["avg_daily_pnl"].apply(lambda x: f"€{x:,.0f}")
+        top_10["Max DD"] = top_10["max_dd"].apply(lambda x: f"€{x:,.0f}")
 
         display_cols = ["Rank", "Market", "Cycles", "Schedule", "Total P&L", "Sharpe", "Win Rate", "Avg Daily", "Max DD"]
         st.dataframe(top_10[display_cols], use_container_width=True, hide_index=True)
 
         csv_top = top_10[display_cols].to_csv(index=False)
-        st.download_button("ð¥ Download Top 10 Strategies", csv_top,
+        st.download_button("📥 Download Top 10 Strategies", csv_top,
                            file_name="top_strategies.csv", mime="text/csv")
 
         # ================================================================
         # DAILY P&L CHART
         # ================================================================
         st.divider()
-        st.subheader("Daily P&L â Best Strategy")
+        st.subheader("Daily P&L — Best Strategy")
 
         st.plotly_chart(
             create_daily_pnl_chart(best["daily_pnl"], test_daily_pnl if has_test else None),
@@ -864,8 +864,8 @@ if optimize_clicked:
         download_cols = ["market_pair", "cycles", "schedule", "total_pnl", "sharpe",
                          "win_rate", "avg_daily_pnl", "max_dd", "num_days"]
         csv_all = results[download_cols].to_csv(index=False)
-        st.download_button("ð¥ Download All Results", csv_all,
+        st.download_button("📥 Download All Results", csv_all,
                            file_name="all_strategies.csv", mime="text/csv")
 
 else:
-    st.info("ð Configure settings in the sidebar and click **Optimize** to discover your optimal battery schedule.")
+    st.info("👈 Configure settings in the sidebar and click **Optimize** to discover your optimal battery schedule.")
