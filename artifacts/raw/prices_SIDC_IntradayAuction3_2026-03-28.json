@@ -1,0 +1,645 @@
+{
+  "deliveryDateCET": "2026-03-28",
+  "version": 2,
+  "updatedAt": "2026-03-28T09:16:47.4830018Z",
+  "deliveryAreas": [
+    "AT",
+    "BE",
+    "FR",
+    "GER",
+    "NL"
+  ],
+  "market": "SIDC_IntradayAuction3",
+  "multiAreaEntries": [
+    {
+      "deliveryStart": "2026-03-28T11:00:00Z",
+      "deliveryEnd": "2026-03-28T11:15:00Z",
+      "entryPerArea": {
+        "AT": 22.1,
+        "BE": -23.29,
+        "FR": -2.35,
+        "GER": -2.35,
+        "NL": -2.35
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T11:15:00Z",
+      "deliveryEnd": "2026-03-28T11:30:00Z",
+      "entryPerArea": {
+        "AT": 17.44,
+        "BE": -31.55,
+        "FR": -4.0,
+        "GER": -4.0,
+        "NL": -4.0
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T11:30:00Z",
+      "deliveryEnd": "2026-03-28T11:45:00Z",
+      "entryPerArea": {
+        "AT": 13.36,
+        "BE": -22.02,
+        "FR": -4.0,
+        "GER": -4.0,
+        "NL": -4.0
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T11:45:00Z",
+      "deliveryEnd": "2026-03-28T12:00:00Z",
+      "entryPerArea": {
+        "AT": 13.56,
+        "BE": -26.43,
+        "FR": -3.22,
+        "GER": -3.22,
+        "NL": -7.92
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T12:00:00Z",
+      "deliveryEnd": "2026-03-28T12:15:00Z",
+      "entryPerArea": {
+        "AT": 16.66,
+        "BE": -25.25,
+        "FR": -3.22,
+        "GER": -3.22,
+        "NL": -6.95
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T12:15:00Z",
+      "deliveryEnd": "2026-03-28T12:30:00Z",
+      "entryPerArea": {
+        "AT": 15.46,
+        "BE": -25.16,
+        "FR": -2.68,
+        "GER": -2.68,
+        "NL": -9.1
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T12:30:00Z",
+      "deliveryEnd": "2026-03-28T12:45:00Z",
+      "entryPerArea": {
+        "AT": 15.36,
+        "BE": -30.19,
+        "FR": -2.1,
+        "GER": -2.1,
+        "NL": -9.98
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T12:45:00Z",
+      "deliveryEnd": "2026-03-28T13:00:00Z",
+      "entryPerArea": {
+        "AT": 14.15,
+        "BE": -24.32,
+        "FR": -2.1,
+        "GER": 2.71,
+        "NL": -9.83
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T13:00:00Z",
+      "deliveryEnd": "2026-03-28T13:15:00Z",
+      "entryPerArea": {
+        "AT": 2.92,
+        "BE": -20.2,
+        "FR": -2.1,
+        "GER": 2.92,
+        "NL": -7.13
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T13:15:00Z",
+      "deliveryEnd": "2026-03-28T13:30:00Z",
+      "entryPerArea": {
+        "AT": 6.0,
+        "BE": -26.43,
+        "FR": -2.1,
+        "GER": 6.0,
+        "NL": -8.9
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T13:30:00Z",
+      "deliveryEnd": "2026-03-28T13:45:00Z",
+      "entryPerArea": {
+        "AT": 16.92,
+        "BE": -23.8,
+        "FR": -2.1,
+        "GER": 16.92,
+        "NL": -5.68
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T13:45:00Z",
+      "deliveryEnd": "2026-03-28T14:00:00Z",
+      "entryPerArea": {
+        "AT": 52.15,
+        "BE": -22.08,
+        "FR": -2.1,
+        "GER": 29.98,
+        "NL": -5.85
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T14:00:00Z",
+      "deliveryEnd": "2026-03-28T14:15:00Z",
+      "entryPerArea": {
+        "AT": 21.06,
+        "BE": -2.1,
+        "FR": -2.1,
+        "GER": 21.06,
+        "NL": -2.1
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T14:15:00Z",
+      "deliveryEnd": "2026-03-28T14:30:00Z",
+      "entryPerArea": {
+        "AT": 44.96,
+        "BE": -2.1,
+        "FR": -2.1,
+        "GER": 35.99,
+        "NL": -1.69
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T14:30:00Z",
+      "deliveryEnd": "2026-03-28T14:45:00Z",
+      "entryPerArea": {
+        "AT": 73.97,
+        "BE": -2.1,
+        "FR": -2.1,
+        "GER": 56.2,
+        "NL": 5.07
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T14:45:00Z",
+      "deliveryEnd": "2026-03-28T15:00:00Z",
+      "entryPerArea": {
+        "AT": 89.79,
+        "BE": -1.44,
+        "FR": -1.44,
+        "GER": 74.51,
+        "NL": 12.17
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T15:00:00Z",
+      "deliveryEnd": "2026-03-28T15:15:00Z",
+      "entryPerArea": {
+        "AT": 75.05,
+        "BE": 5.57,
+        "FR": 5.57,
+        "GER": 57.85,
+        "NL": 10.96
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T15:15:00Z",
+      "deliveryEnd": "2026-03-28T15:30:00Z",
+      "entryPerArea": {
+        "AT": 99.25,
+        "BE": 29.53,
+        "FR": -2.1,
+        "GER": 72.0,
+        "NL": 29.53
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T15:30:00Z",
+      "deliveryEnd": "2026-03-28T15:45:00Z",
+      "entryPerArea": {
+        "AT": 115.83,
+        "BE": 42.52,
+        "FR": 16.62,
+        "GER": 86.15,
+        "NL": 42.52
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T15:45:00Z",
+      "deliveryEnd": "2026-03-28T16:00:00Z",
+      "entryPerArea": {
+        "AT": 118.47,
+        "BE": 58.98,
+        "FR": 18.31,
+        "GER": 97.39,
+        "NL": 58.98
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T16:00:00Z",
+      "deliveryEnd": "2026-03-28T16:15:00Z",
+      "entryPerArea": {
+        "AT": 107.2,
+        "BE": 37.31,
+        "FR": 17.97,
+        "GER": 95.8,
+        "NL": 37.31
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T16:15:00Z",
+      "deliveryEnd": "2026-03-28T16:30:00Z",
+      "entryPerArea": {
+        "AT": 107.8,
+        "BE": 66.61,
+        "FR": 17.85,
+        "GER": 101.34,
+        "NL": 66.61
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T16:30:00Z",
+      "deliveryEnd": "2026-03-28T16:45:00Z",
+      "entryPerArea": {
+        "AT": 121.38,
+        "BE": 110.17,
+        "FR": 32.76,
+        "GER": 121.38,
+        "NL": 110.17
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T16:45:00Z",
+      "deliveryEnd": "2026-03-28T17:00:00Z",
+      "entryPerArea": {
+        "AT": 128.64,
+        "BE": 125.28,
+        "FR": 56.42,
+        "GER": 128.64,
+        "NL": 125.28
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T17:00:00Z",
+      "deliveryEnd": "2026-03-28T17:15:00Z",
+      "entryPerArea": {
+        "AT": 124.12,
+        "BE": 124.12,
+        "FR": 39.81,
+        "GER": 124.12,
+        "NL": 124.12
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T17:15:00Z",
+      "deliveryEnd": "2026-03-28T17:30:00Z",
+      "entryPerArea": {
+        "AT": 132.19,
+        "BE": 132.19,
+        "FR": 78.97,
+        "GER": 132.19,
+        "NL": 132.19
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T17:30:00Z",
+      "deliveryEnd": "2026-03-28T17:45:00Z",
+      "entryPerArea": {
+        "AT": 143.99,
+        "BE": 143.99,
+        "FR": 83.17,
+        "GER": 143.99,
+        "NL": 143.99
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T17:45:00Z",
+      "deliveryEnd": "2026-03-28T18:00:00Z",
+      "entryPerArea": {
+        "AT": 154.86,
+        "BE": 154.86,
+        "FR": 108.97,
+        "GER": 154.86,
+        "NL": 154.86
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T18:00:00Z",
+      "deliveryEnd": "2026-03-28T18:15:00Z",
+      "entryPerArea": {
+        "AT": 160.57,
+        "BE": 160.57,
+        "FR": 114.1,
+        "GER": 160.57,
+        "NL": 160.57
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T18:15:00Z",
+      "deliveryEnd": "2026-03-28T18:30:00Z",
+      "entryPerArea": {
+        "AT": 149.89,
+        "BE": 149.89,
+        "FR": 143.82,
+        "GER": 149.89,
+        "NL": 149.89
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T18:30:00Z",
+      "deliveryEnd": "2026-03-28T18:45:00Z",
+      "entryPerArea": {
+        "AT": 148.17,
+        "BE": 148.17,
+        "FR": 129.88,
+        "GER": 148.17,
+        "NL": 148.17
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T18:45:00Z",
+      "deliveryEnd": "2026-03-28T19:00:00Z",
+      "entryPerArea": {
+        "AT": 138.97,
+        "BE": 138.97,
+        "FR": 124.2,
+        "GER": 138.97,
+        "NL": 138.97
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T19:00:00Z",
+      "deliveryEnd": "2026-03-28T19:15:00Z",
+      "entryPerArea": {
+        "AT": 158.63,
+        "BE": 158.63,
+        "FR": 91.59,
+        "GER": 158.63,
+        "NL": 158.63
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T19:15:00Z",
+      "deliveryEnd": "2026-03-28T19:30:00Z",
+      "entryPerArea": {
+        "AT": 147.92,
+        "BE": 147.92,
+        "FR": 80.59,
+        "GER": 147.92,
+        "NL": 147.92
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T19:30:00Z",
+      "deliveryEnd": "2026-03-28T19:45:00Z",
+      "entryPerArea": {
+        "AT": 139.85,
+        "BE": 119.67,
+        "FR": 95.23,
+        "GER": 139.85,
+        "NL": 139.85
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T19:45:00Z",
+      "deliveryEnd": "2026-03-28T20:00:00Z",
+      "entryPerArea": {
+        "AT": 132.0,
+        "BE": 117.43,
+        "FR": 83.91,
+        "GER": 132.0,
+        "NL": 132.0
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T20:00:00Z",
+      "deliveryEnd": "2026-03-28T20:15:00Z",
+      "entryPerArea": {
+        "AT": 139.34,
+        "BE": 130.6,
+        "FR": 115.62,
+        "GER": 139.34,
+        "NL": 139.34
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T20:15:00Z",
+      "deliveryEnd": "2026-03-28T20:30:00Z",
+      "entryPerArea": {
+        "AT": 135.1,
+        "BE": 121.89,
+        "FR": 98.13,
+        "GER": 135.1,
+        "NL": 135.1
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T20:30:00Z",
+      "deliveryEnd": "2026-03-28T20:45:00Z",
+      "entryPerArea": {
+        "AT": 130.12,
+        "BE": 100.6,
+        "FR": 92.56,
+        "GER": 130.12,
+        "NL": 130.12
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T20:45:00Z",
+      "deliveryEnd": "2026-03-28T21:00:00Z",
+      "entryPerArea": {
+        "AT": 126.0,
+        "BE": 101.9,
+        "FR": 56.02,
+        "GER": 126.0,
+        "NL": 126.0
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T21:00:00Z",
+      "deliveryEnd": "2026-03-28T21:15:00Z",
+      "entryPerArea": {
+        "AT": 130.78,
+        "BE": 130.78,
+        "FR": 98.4,
+        "GER": 130.78,
+        "NL": 130.78
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T21:15:00Z",
+      "deliveryEnd": "2026-03-28T21:30:00Z",
+      "entryPerArea": {
+        "AT": 128.73,
+        "BE": 128.73,
+        "FR": 98.42,
+        "GER": 128.73,
+        "NL": 128.73
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T21:30:00Z",
+      "deliveryEnd": "2026-03-28T21:45:00Z",
+      "entryPerArea": {
+        "AT": 125.45,
+        "BE": 125.45,
+        "FR": 123.41,
+        "GER": 125.45,
+        "NL": 125.45
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T21:45:00Z",
+      "deliveryEnd": "2026-03-28T22:00:00Z",
+      "entryPerArea": {
+        "AT": 120.64,
+        "BE": 120.64,
+        "FR": 106.51,
+        "GER": 120.64,
+        "NL": 120.64
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T22:00:00Z",
+      "deliveryEnd": "2026-03-28T22:15:00Z",
+      "entryPerArea": {
+        "AT": 133.43,
+        "BE": 133.43,
+        "FR": 108.0,
+        "GER": 133.43,
+        "NL": 133.43
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T22:15:00Z",
+      "deliveryEnd": "2026-03-28T22:30:00Z",
+      "entryPerArea": {
+        "AT": 122.58,
+        "BE": 122.58,
+        "FR": 113.94,
+        "GER": 122.58,
+        "NL": 122.58
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T22:30:00Z",
+      "deliveryEnd": "2026-03-28T22:45:00Z",
+      "entryPerArea": {
+        "AT": 121.23,
+        "BE": 121.23,
+        "FR": 106.78,
+        "GER": 121.23,
+        "NL": 121.23
+      }
+    },
+    {
+      "deliveryStart": "2026-03-28T22:45:00Z",
+      "deliveryEnd": "2026-03-28T23:00:00Z",
+      "entryPerArea": {
+        "AT": 109.9,
+        "BE": 109.9,
+        "FR": 96.04,
+        "GER": 109.9,
+        "NL": 109.9
+      }
+    }
+  ],
+  "blockPriceAggregates": [
+    {
+      "blockName": "Peak",
+      "deliveryStart": "2026-03-28T07:00:00Z",
+      "deliveryEnd": "2026-03-28T19:00:00Z",
+      "averagePricePerArea": {
+        "AT": {
+          "average": 76.95,
+          "min": 2.92,
+          "max": 160.57
+        },
+        "BE": {
+          "average": 41.26,
+          "min": -31.55,
+          "max": 160.57
+        },
+        "FR": {
+          "average": 29.58,
+          "min": -4.0,
+          "max": 143.82
+        },
+        "GER": {
+          "average": 66.81,
+          "min": -4.0,
+          "max": 160.57
+        },
+        "NL": {
+          "average": 48.93,
+          "min": -9.98,
+          "max": 160.57
+        }
+      }
+    },
+    {
+      "blockName": "Off-peak 2",
+      "deliveryStart": "2026-03-28T19:00:00Z",
+      "deliveryEnd": "2026-03-28T23:00:00Z",
+      "averagePricePerArea": {
+        "AT": {
+          "average": 131.36,
+          "min": 109.9,
+          "max": 158.63
+        },
+        "BE": {
+          "average": 124.46,
+          "min": 100.6,
+          "max": 158.63
+        },
+        "FR": {
+          "average": 97.82,
+          "min": 56.02,
+          "max": 123.41
+        },
+        "GER": {
+          "average": 131.36,
+          "min": 109.9,
+          "max": 158.63
+        },
+        "NL": {
+          "average": 131.36,
+          "min": 109.9,
+          "max": 158.63
+        }
+      }
+    }
+  ],
+  "currency": "EUR",
+  "exchangeRate": 1,
+  "areaStates": [
+    {
+      "state": "Final",
+      "areas": [
+        "AT",
+        "BE",
+        "FR",
+        "GER",
+        "NL"
+      ]
+    }
+  ],
+  "areaAverages": [
+    {
+      "areaCode": "AT",
+      "price": 95.08
+    },
+    {
+      "areaCode": "BE",
+      "price": 68.99
+    },
+    {
+      "areaCode": "FR",
+      "price": 52.33
+    },
+    {
+      "areaCode": "GER",
+      "price": 88.33
+    },
+    {
+      "areaCode": "NL",
+      "price": 76.41
+    }
+  ]
+}

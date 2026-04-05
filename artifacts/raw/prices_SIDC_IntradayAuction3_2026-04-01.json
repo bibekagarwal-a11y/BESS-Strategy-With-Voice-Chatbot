@@ -1,0 +1,51 @@
+{
+  "deliveryDateCET": "2026-04-01",
+  "version": 1,
+  "updatedAt": "2026-04-01T08:30:42.1902444Z",
+  "deliveryAreas": [
+    "AT",
+    "BE",
+    "FR",
+    "GER",
+    "NL"
+  ],
+  "market": "SIDC_IntradayAuction3",
+  "multiAreaEntries": [],
+  "blockPriceAggregates": [],
+  "currency": "EUR",
+  "exchangeRate": 1,
+  "areaStates": [
+    {
+      "state": "Cancelled",
+      "areas": [
+        "AT",
+        "BE",
+        "FR",
+        "GER",
+        "NL"
+      ]
+    }
+  ],
+  "areaAverages": [
+    {
+      "areaCode": "AT",
+      "price": null
+    },
+    {
+      "areaCode": "BE",
+      "price": null
+    },
+    {
+      "areaCode": "FR",
+      "price": null
+    },
+    {
+      "areaCode": "GER",
+      "price": null
+    },
+    {
+      "areaCode": "NL",
+      "price": null
+    }
+  ]
+}

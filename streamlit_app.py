@@ -57,7 +57,9 @@ def load_csv(filename: str, price_col: str) -> Optional[pd.DataFrame]:
     missing = required - set(df.columns)
     if missing:
         return None
-    df["deliveryStartCET"] = pd.to_datetime(df["deliveryStartCET"])
+    df["deliveryStartCET"] = (
+        pd.to_datetime(df["deliveryStartCET"], utc=True).dt.tz_convert("Europe/Paris")
+    )
     return df
 
 
@@ -76,13 +78,16 @@ def compute_arbitrage(
     """Compute average spread (other - day ahead) per date and area."""
     if da_df is None or other_df is None:
         return pd.DataFrame()
+    da_subset = da_df[["date_cet", "area", "deliveryStartCET", "price"]].rename(
+        columns={"price": "da_price"}
+    )
     merged = pd.merge(
-        da_df[["date_cet", "area", "deliveryStartCET", "price"]],
+        da_subset,
         other_df[["date_cet", "area", "deliveryStartCET", other_col]],
         on=["date_cet", "area", "deliveryStartCET"],
         how="inner",
     )
-    merged["spread"] = merged[other_col] - merged["price"]
+    merged["spread"] = merged[other_col] - merged["da_price"]
     return (
         merged.groupby(["date_cet", "area"])["spread"]
         .mean()
@@ -168,19 +173,19 @@ def main() -> None:
     chart_df = da_avg.rename(columns={"avg_price": "DayAhead"})[["date_cet", "DayAhead"]].copy()
     if ida1_avg is not None and not ida1_avg.empty:
         chart_df = chart_df.merge(
-            ida1_avg.rename(columns={"avg_price": "IDA1"}), on="date_cet", how="left"
+            ida1_avg.rename(columns={"avg_price": "IDA1"})[["date_cet", "IDA1"]], on="date_cet", how="left"
         )
     if ida2_avg is not None and not ida2_avg.empty:
         chart_df = chart_df.merge(
-            ida2_avg.rename(columns={"avg_price": "IDA2"}), on="date_cet", how="left"
+            ida2_avg.rename(columns={"avg_price": "IDA2"})[["date_cet", "IDA2"]], on="date_cet", how="left"
         )
     if ida3_avg is not None and not ida3_avg.empty:
         chart_df = chart_df.merge(
-            ida3_avg.rename(columns={"avg_price": "IDA3"}), on="date_cet", how="left"
+            ida3_avg.rename(columns={"avg_price": "IDA3"})[["date_cet", "IDA3"]], on="date_cet", how="left"
         )
     if vwap_avg is not None and not vwap_avg.empty:
         chart_df = chart_df.merge(
-            vwap_avg.rename(columns={"avg_price": "VWAP"}), on="date_cet", how="left"
+            vwap_avg.rename(columns={"avg_price": "VWAP"})[["date_cet", "VWAP"]], on="date_cet", how="left"
         )
 
     chart_df = chart_df.sort_values("date_cet")
