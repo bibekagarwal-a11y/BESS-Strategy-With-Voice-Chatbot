@@ -8,7 +8,8 @@ on:
         required: false
         default: "false"
   schedule:
-    # Run hourly; the script itself will only do work at 12:00 Europe/Paris (DST-safe)
+    # Hourly; the script self-gates to 15:00 Europe/Paris (DST-safe),
+    # so it effectively runs once per day at 15h CET/CEST.
     - cron: "5 * * * *"
 
 permissions:
@@ -18,10 +19,11 @@ jobs:
   run:
     runs-on: ubuntu-latest
     env:
-      AREAS: "FR,GER,GB,BE,NL,AT"
+      AREAS: "AT,BE,FR,GER,NL"
       CURRENCY: "EUR"
-      START_DATE: "2026-01-01"
-      ENFORCE_NOON_PARIS: "1"
+      START_DATE: "2026-03-01"
+      ENFORCE_TIME_PARIS: "1"
+      TARGET_HOUR: "15"
       BACKFILL: ${{ github.event.inputs.backfill == 'true' && '1' || '0' }}
 
     steps:

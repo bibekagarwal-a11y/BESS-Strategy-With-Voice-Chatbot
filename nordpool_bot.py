@@ -185,7 +185,14 @@ def run(backfill: bool):
     ensure_dirs()
     start = date.fromisoformat(START_DATE)
     today = paris_now().date()
-    dates = list(daterange(start, today)) if backfill else [today]
+    if backfill:
+        dates = list(daterange(start, today))
+    else:
+        # Daily run: refresh yesterday (the "day before") AND today.
+        # Yesterday's numbers are final; today's day-ahead has been
+        # published by ~13:00 Paris time so it is available at 15:00.
+        yesterday = today - timedelta(days=1)
+        dates = [yesterday, today]
 
     all_dayahead, all_ida1, all_ida2, all_ida3, all_vwap_qh = [], [], [], [], []
     auction_markets = [
