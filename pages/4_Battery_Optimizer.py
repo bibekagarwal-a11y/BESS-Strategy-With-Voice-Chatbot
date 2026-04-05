@@ -11,7 +11,7 @@ st.set_page_config(layout="wide", page_title="Battery Optimizer", page_icon="ðŸ”
 
 # Color palette
 PALETTE = {
-    "primary": ["#0D47A1", "#1565C0", "#1976D2", "#1E88E5", "#42A5F5"],
+    "primary": ["#0D47A1", "#1565C0", "#1976D2", "#1E88E5", "#42A5F5"],h
     "accent": ["#E65100", "#EF6C00", "#F57C00", "#FB8C00", "#FFA726"],
     "green": ["#1B5E20", "#2E7D32", "#388E3C", "#43A047", "#66BB6A"],
 }
@@ -364,9 +364,9 @@ def optimize_battery(
 
     results_df = pd.DataFrame(all_results)
 
-  2 def _bs_from_cycle(row, idx, which):
+    def _bs_from_cycle(row, idx, which):
         cl = row.get("cycle_list")
-        if isinstance(cl, list) and len(cl) > idx:
+        if isinstance(cl, list) and len(cl) > idx:h
             return cl[idx][0] if which == "b" else cl[idx][1]
         return np.nan
 
