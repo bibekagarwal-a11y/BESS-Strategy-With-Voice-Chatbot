@@ -28,6 +28,7 @@ If any file is missing, the corresponding analysis will be skipped.
 """
 
 import os
+import logging
 from functools import lru_cache
 from typing import Dict, Optional
 
@@ -39,6 +40,39 @@ import plotly.express as px
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
+
+
+# ── Daily prediction scheduler (starts once per server process) ──────────────
+import streamlit as _st  # noqa: E402 — needed before the decorator
+
+
+@_st.cache_resource
+def _start_prediction_scheduler():
+    """Start APScheduler to run day-ahead predictions daily at 11:45 CET."""
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.cron import CronTrigger
+
+    def _daily_job():
+        try:
+            from predict_tomorrow import run_predictions
+            run_predictions()
+        except Exception as exc:
+            logging.error(f"[Scheduler] Prediction run failed: {exc}", exc_info=True)
+
+    scheduler = BackgroundScheduler(timezone="Europe/Berlin")
+    scheduler.add_job(
+        _daily_job,
+        trigger=CronTrigger(hour=11, minute=45, timezone="Europe/Berlin"),
+        id="daily_price_prediction",
+        replace_existing=True,
+    )
+    scheduler.start()
+    logging.info("[Scheduler] Daily prediction scheduler started (11:45 CET)")
+    return scheduler
+
+
+_start_prediction_scheduler()
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 @lru_cache(maxsize=None)
