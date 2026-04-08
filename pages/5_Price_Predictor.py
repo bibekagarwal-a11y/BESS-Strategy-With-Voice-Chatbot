@@ -101,7 +101,7 @@ MODEL_COLORS = {
 def load_hourly_prices() -> pd.DataFrame:
     """Load 15-min day-ahead prices and aggregate to hourly means."""
     df = pd.read_csv(DATA_PATH)
-    df["dt"] = pd.to_datetime(df["deliveryStartCET"]).dt.tz_localize(None)
+    df["dt"] = pd.to_datetime(df["deliveryStartCET"], utc=True).dt.tz_convert(None)
     df["hour"] = df["dt"].dt.floor("h")
     hourly = (
         df.groupby(["area", "hour"])["price"]
