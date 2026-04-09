@@ -2648,6 +2648,10 @@ def main():
         "Type a trading strategy **or** a data query in plain English. "
         "Use the **voice input** button for hands-free commands."
     )
+
+    # Contact link in sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("📬 [Contact to know more](https://www.linkedin.com/in/bibek-agarwal)")
     st.markdown(
         "**Datasets:** DayAhead, IDA1, IDA2, IDA3, VWAP &nbsp;|&nbsp; "
         "**Areas:** AT, BE, FR, GER, NL &nbsp;|&nbsp; "
