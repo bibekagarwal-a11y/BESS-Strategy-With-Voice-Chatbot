@@ -32,7 +32,10 @@ import streamlit as st
 # Page config
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
-
+    layout="wide",
+    page_title="Tomorrow's Forecast",
+    page_icon="📅",
+)
 st.markdown(
     """<style>
 a.cc-btn{position:fixed;top:14px;right:60px;z-index:999999;
@@ -45,10 +48,6 @@ box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!impo
 </style>
 <a class="cc-btn" href="https://www.linkedin.com/in/bibek-agarwal" target="_blank">📬 Contact to know more</a>""",
     unsafe_allow_html=True,
-)
-    layout="wide",
-    page_title="Tomorrow's Forecast",
-    page_icon="📅",
 )
 
 BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
