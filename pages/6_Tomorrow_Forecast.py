@@ -206,6 +206,8 @@ with st.sidebar:
         "The model trains on all historical 15-min data + today's "
         "weather forecast and predicts tomorrow's 96 delivery slots."
     )
+    st.markdown("---")
+    st.markdown("📬 [Contact to know more](https://www.linkedin.com/in/bibek-agarwal)")
 
 if run_btn:
     result = run_now()
