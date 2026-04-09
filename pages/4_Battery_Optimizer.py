@@ -604,6 +604,9 @@ st.sidebar.caption(f"Test (out-of-sample): {100 - train_pct}%")
 
 optimize_clicked = st.sidebar.button("🚀 Optimize", type="primary")
 
+st.sidebar.markdown("---")
+st.sidebar.markdown("📬 [Contact to know more](https://www.linkedin.com/in/bibek-agarwal)")
+
 # ============================================================================
 # MAIN CONTENT
 # ============================================================================
@@ -869,3 +872,4 @@ if optimize_clicked:
 
 else:
     st.info("👈 Configure settings in the sidebar and click **Optimize** to discover your optimal battery schedule.")
+
