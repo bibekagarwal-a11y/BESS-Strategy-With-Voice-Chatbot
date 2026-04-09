@@ -32,6 +32,20 @@ import streamlit as st
 # Page config
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
+
+st.markdown(
+    """<style>
+a.cc-btn{position:fixed;top:14px;right:60px;z-index:999999;
+background:linear-gradient(135deg,#0D47A1,#1976D2);color:#fff!important;
+padding:7px 16px;border-radius:20px;font-weight:600;font-size:13px;
+text-decoration:none!important;box-shadow:0 2px 8px rgba(0,0,0,.25);
+transition:all .2s ease;letter-spacing:.3px}
+a.cc-btn:hover{background:linear-gradient(135deg,#1565C0,#1E88E5);
+box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!important}
+</style>
+<a class="cc-btn" href="https://www.linkedin.com/in/bibek-agarwal" target="_blank">📬 Contact to know more</a>""",
+    unsafe_allow_html=True,
+)
     layout="wide",
     page_title="Tomorrow's Forecast",
     page_icon="📅",
@@ -567,8 +581,6 @@ with st.sidebar:
         "The model trains on all historical 15-min data + today's "
         "weather forecast and predicts tomorrow's 96 delivery slots."
     )
-    st.markdown("---")
-    st.markdown("📬 [Contact to know more](https://www.linkedin.com/in/bibek-agarwal)")
 
 if run_btn:
     result = run_now()
