@@ -149,6 +149,19 @@ def compute_arbitrage(
 def main() -> None:
     st.title("Nord Pool Price Explorer")
     st.markdown(
+        """<style>
+a.cc-btn{position:fixed;top:14px;right:60px;z-index:999999;
+background:linear-gradient(135deg,#0D47A1,#1976D2);color:#fff!important;
+padding:7px 16px;border-radius:20px;font-weight:600;font-size:13px;
+text-decoration:none!important;box-shadow:0 2px 8px rgba(0,0,0,.25);
+transition:all .2s ease;letter-spacing:.3px}
+a.cc-btn:hover{background:linear-gradient(135deg,#1565C0,#1E88E5);
+box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!important}
+</style>
+<a class="cc-btn" href="https://www.linkedin.com/in/bibek-agarwal" target="_blank">\u{1F4EC} Contact to know more</a>""",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
         """
         This Streamlit app visualises electricity prices from the Nord Pool day‑ahead
         and intraday markets.  Select a delivery area and explore price trends,
@@ -157,9 +170,6 @@ def main() -> None:
         """
     )
 
-    # Contact link in sidebar
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("📬 [Contact to know more](https://www.linkedin.com/in/bibek-agarwal)")
 
     # Load datasets
     da = load_csv("dayahead_prices.csv", "price")
