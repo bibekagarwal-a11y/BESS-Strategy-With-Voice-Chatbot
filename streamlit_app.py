@@ -158,7 +158,7 @@ transition:all .2s ease;letter-spacing:.3px}
 a.cc-btn:hover{background:linear-gradient(135deg,#1565C0,#1E88E5);
 box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!important}
 </style>
-<a class="cc-btn" href="https://www.linkedin.com/in/bibek-agarwal" target="_blank">\u{1F4EC} Contact to know more</a>""",
+<a class="cc-btn" href="https://www.linkedin.com/in/bibek-agarwal" target="_blank">📬 Contact to know more</a>""",
         unsafe_allow_html=True,
     )
     st.markdown(
