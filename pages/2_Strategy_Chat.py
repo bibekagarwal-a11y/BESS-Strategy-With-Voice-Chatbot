@@ -2664,7 +2664,7 @@ box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!impo
     )
 
     # Contact link in sidebar
-        st.markdown(
+    st.markdown(
         "**Datasets:** DayAhead, IDA1, IDA2, IDA3, VWAP &nbsp;|&nbsp; "
         "**Areas:** AT, BE, FR, GER, NL &nbsp;|&nbsp; "
         "**Data:** Jan-Mar 2026 (quarter-hourly)"
