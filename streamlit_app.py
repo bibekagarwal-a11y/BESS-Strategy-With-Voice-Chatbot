@@ -39,40 +39,57 @@ import plotly.express as px
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "data")
 
-
-# ── Daily prediction scheduler (starts once per server process) ──────────────
-import streamlit as _st  # noqa: E402 — needed before the decorator
-
-
-@_st.cache_resource
-def _start_prediction_scheduler():
-    """Start APScheduler to run day-ahead predictions daily at 11:45 CET."""
-    from apscheduler.schedulers.background import BackgroundScheduler
-    from apscheduler.triggers.cron import CronTrigger
-
-    def _daily_job():
-        try:
-            from predict_tomorrow import run_predictions
-            run_predictions()
-        except Exception as exc:
-            logging.error(f"[Scheduler] Prediction run failed: {exc}", exc_info=True)
-
-    scheduler = BackgroundScheduler(timezone="Europe/Berlin")
-    scheduler.add_job(
-        _daily_job,
-        trigger=CronTrigger(hour=11, minute=45, timezone="Europe/Berlin"),
-        id="daily_price_prediction",
-        replace_existing=True,
-    )
-    scheduler.start()
-    logging.info("[Scheduler] Daily prediction scheduler started (11:45 CET)")
-    return scheduler
-
-
-_start_prediction_scheduler()
 # ─────────────────────────────────────────────────────────────────────────────
+# Daily prediction scheduler — starts once per server process
+# Runs predict_tomorrow.run_predictions() every day at 11:45 CET
+# ─────────────────────────────────────────────────────────────────────────────
+
+@st.cache_resource
+def _start_prediction_scheduler():
+    """
+    Start APScheduler in a background thread.
+    @st.cache_resource ensures this runs exactly once per server process,
+    not on every Streamlit rerun or new user session.
+    """
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.triggers.cron import CronTrigger
+
+        def _daily_job():
+            try:
+                logging.info("[Scheduler] Starting daily prediction run at 11:45 CET")
+                from predict_tomorrow import run_predictions
+                result = run_predictions()
+                logging.info(
+                    f"[Scheduler] Predictions saved for {result.get('delivery_day', '?')}"
+                )
+            except Exception as exc:
+                logging.error(f"[Scheduler] Prediction run failed: {exc}", exc_info=True)
+
+        scheduler = BackgroundScheduler(timezone="Europe/Berlin")
+        # Run every day at 11:45 CET
+        scheduler.add_job(
+            _daily_job,
+            trigger=CronTrigger(hour=11, minute=45, timezone="Europe/Berlin"),
+            id="daily_price_prediction",
+            name="Day-ahead price prediction",
+            replace_existing=True,
+        )
+        scheduler.start()
+        logging.info("[Scheduler] APScheduler started — daily predictions at 11:45 CET")
+        return scheduler
+    except ImportError:
+        logging.warning("[Scheduler] apscheduler not installed — skipping scheduled jobs")
+        return None
+    except Exception as exc:
+        logging.error(f"[Scheduler] Failed to start scheduler: {exc}", exc_info=True)
+        return None
+
+
+# Start the scheduler when the Streamlit server loads this module
+_start_prediction_scheduler()
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
 
 @lru_cache(maxsize=None)
@@ -139,6 +156,10 @@ def main() -> None:
         potential arbitrage opportunities.
         """
     )
+
+    # Contact link in sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("📬 [Contact to know more](https://www.linkedin.com/in/bibek-agarwal)")
 
     # Load datasets
     da = load_csv("dayahead_prices.csv", "price")
