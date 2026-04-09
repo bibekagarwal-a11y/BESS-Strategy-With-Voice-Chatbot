@@ -431,6 +431,9 @@ with st.sidebar.expander("⚙️ Advanced: Feature info"):
 
 run_clicked = st.sidebar.button("🚀 Run Prediction", type="primary")
 
+st.sidebar.markdown("---")
+st.sidebar.markdown("📬 [Contact to know more](https://www.linkedin.com/in/bibek-agarwal)")
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────────────────────────────────────
