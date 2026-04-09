@@ -2641,9 +2641,10 @@ def _apply_common_fields(strat: Dict, fields: Dict):
 def main():
     try:
         st.set_page_config(layout="wide", page_title="Strategy Chat")
-
-st.markdown(
-    """<style>
+    except st.errors.StreamlitAPIException:
+        pass  # already set by another page
+    st.markdown(
+        """<style>
 a.cc-btn{position:fixed;top:14px;right:60px;z-index:999999;
 background:linear-gradient(135deg,#0D47A1,#1976D2);color:#fff!important;
 padding:7px 16px;border-radius:20px;font-weight:600;font-size:13px;
@@ -2653,10 +2654,8 @@ a.cc-btn:hover{background:linear-gradient(135deg,#1565C0,#1E88E5);
 box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!important}
 </style>
 <a class="cc-btn" href="https://www.linkedin.com/in/bibek-agarwal" target="_blank">📬 Contact to know more</a>""",
-    unsafe_allow_html=True,
-)
-    except st.errors.StreamlitAPIException:
-        pass  # already set by another page
+        unsafe_allow_html=True,
+    )
     st.title("Strategy Chat")
     st.markdown(
         "Type a trading strategy **or** a data query in plain English. "
