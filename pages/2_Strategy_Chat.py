@@ -2660,21 +2660,24 @@ box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!impo
     st.markdown(
         """
         <style>
-        #watt-header{position:fixed;top:0;left:0;right:0;z-index:1000000;background:#fff;border-bottom:2px solid #e2e8f0;padding:0 20px 0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+        #watt-header{position:fixed;top:0;left:0;right:0;z-index:1000000;background:#fff;border-bottom:2px solid #e2e8f0;padding:0 20px;height:52px;display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.06);}
         [data-testid="stMainBlockContainer"]{padding-top:60px!important;}
         [data-testid="stSidebarCollapseButton"]{display:none!important;}
         </style>
         <div id="watt-header">
+          <div style="flex:1"></div>
           <div style="display:flex;align-items:center;gap:12px">
             <div style="background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(21,101,192,.3)">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
             <div>
               <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:1.2rem;font-weight:700;color:#0D1B3E;letter-spacing:-0.2px;line-height:1.2">Watt Happens</div>
-              <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:0.7rem;color:#64748b;margin-top:1px">BESS Strategy &amp; Energy Intelligence Platform</div>
+              <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:0.72rem;color:#64748b;margin-top:1px">BESS Strategy &amp; Energy Intelligence Platform</div>
             </div>
           </div>
-          <a href="https://www.linkedin.com/in/bibek-agarwal" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#0D47A1,#1976D2);color:#fff!important;padding:7px 16px;border-radius:20px;font-weight:600;font-size:13px;text-decoration:none!important;box-shadow:0 2px 8px rgba(0,0,0,.25);letter-spacing:.3px;white-space:nowrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>Contact to know more</a>
+          <div style="flex:1;display:flex;justify-content:flex-end;align-items:center">
+            <a href="https://www.linkedin.com/in/bibek-agarwal" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0D47A1,#1976D2);color:#fff!important;padding:8px 20px;border-radius:20px;font-weight:600;font-size:14px;text-decoration:none!important;box-shadow:0 2px 8px rgba(0,0,0,.25);letter-spacing:.3px;white-space:nowrap"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>Contact to know more</a>
+          </div>
         </div>
         """,
         unsafe_allow_html=True,
