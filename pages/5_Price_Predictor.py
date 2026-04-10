@@ -217,8 +217,8 @@ def _metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     mae  = mean_absolute_error(y_true, y_pred)
     rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
     r2   = r2_score(y_true, y_pred)
-    mask = y_true != 0
-    mape = float(np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100) if mask.sum() > 0 else float("nan")
+    mask = np.abs(y_true) > 10  # exclude near-zero / negative prices to avoid MAPE explosion
+    mape = float(np.mean(np.abs((y_true[mask] - y_pred[mask]) / np.abs(y_true[mask]))) * 100) if mask.sum() > 0 else float("nan")
     return {"MAE": mae, "RMSE": rmse, "R²": r2, "MAPE %": mape}
 
 
