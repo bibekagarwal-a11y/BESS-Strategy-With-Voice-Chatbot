@@ -50,6 +50,18 @@ box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!impo
     unsafe_allow_html=True,
 )
 
+st.markdown(
+    """
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <div style="background:linear-gradient(135deg,#0A1628 0%,#0D2B6B 30%,#0D47A1 60%,#1565C0 100%);text-align:center;padding:30px 20px 26px;margin:-1rem -1rem 1.5rem -1rem;border-radius:0 0 18px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.4);position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 120%,rgba(41,182,246,0.18) 0%,transparent 70%)"></div>
+      <h1 style="font-family:'Orbitron',monospace;color:#fff;font-size:2.6rem;margin:0;letter-spacing:8px;font-weight:900;text-shadow:0 0 40px rgba(79,195,247,0.9),0 0 80px rgba(79,195,247,0.4),0 3px 15px rgba(0,0,0,0.5);position:relative">⚡ WATT HAPPENS</h1>
+      <p style="color:rgba(255,255,255,0.6);margin:10px 0 0;font-size:0.8rem;letter-spacing:4px;text-transform:uppercase;font-family:'Segoe UI',sans-serif;position:relative">Nord Pool Energy Intelligence</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_JSON = os.path.join(BASE_DIR, "data", "predictions_tomorrow.json")
 PRICE_CSV   = os.path.join(BASE_DIR, "data", "dayahead_prices.csv")
