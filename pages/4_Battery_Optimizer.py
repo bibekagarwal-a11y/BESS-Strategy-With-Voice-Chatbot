@@ -11,29 +11,32 @@ st.set_page_config(layout="wide", page_title="Battery Optimizer", page_icon="ðŸ”
 
 st.markdown(
     """
-    <style>
-    #watt-header{position:fixed;top:0;left:0;right:0;z-index:1000000;background:#fff;border-bottom:2px solid #e2e8f0;padding:0 20px;height:52px;display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.06);}
-    [data-testid="stMainBlockContainer"]{padding-top:60px!important;}
-    [data-testid="stSidebarCollapseButton"]{display:none!important;}
-    #watt-header a,#watt-header a:visited{color:#fff!important;background:linear-gradient(135deg,#0D47A1,#1976D2)!important;text-decoration:none!important;border-radius:20px!important;padding:8px 20px!important;font-weight:600!important;font-size:14px!important;box-shadow:0 2px 8px rgba(0,0,0,.25)!important;display:inline-flex!important;align-items:center!important;gap:8px!important;white-space:nowrap!important;letter-spacing:.3px!important;}
-       #watt-header a:hover{opacity:.88!important;}
-       </style>
-    <div id="watt-header">
-      <div style="flex:1"></div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(21,101,192,.3)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        </div>
-        <div>
-          <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:1.2rem;font-weight:700;color:#0D1B3E;letter-spacing:-0.2px;line-height:1.2">Watt Happens</div>
-          <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:0.72rem;color:#64748b;margin-top:1px">BESS Strategy &amp; Energy Intelligence Platform</div>
-        </div>
-      </div>
-      <div style="flex:1;display:flex;justify-content:flex-end;align-items:center">
-        <a href="https://www.linkedin.com/in/bibek-agarwal" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0D47A1,#1976D2);color:#fff!important;padding:8px 20px;border-radius:20px;font-weight:600;font-size:14px;text-decoration:none!important;box-shadow:0 2px 8px rgba(0,0,0,.25);letter-spacing:.3px;white-space:nowrap"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>Contact to know more</a>
-      </div>
+<style>
+#watt-header{position:fixed;top:0;left:0;right:0;z-index:1000000;background:#fff;border-bottom:2px solid #e2e8f0;padding:0 20px;height:52px;display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+[data-testid="stMainBlockContainer"]{padding-top:60px!important;}
+[data-testid="stSidebarCollapseButton"]{display:none!important;}
+#watt-header a,#watt-header a:visited{color:#fff!important;background:linear-gradient(135deg,#0D47A1,#1976D2)!important;text-decoration:none!important;border-radius:20px!important;padding:8px 20px!important;font-weight:600!important;font-size:14px!important;box-shadow:0 2px 8px rgba(0,0,0,.25)!important;display:inline-flex!important;align-items:center!important;gap:8px!important;white-space:nowrap!important;letter-spacing:.3px!important;}
+#watt-header a:hover{opacity:.88!important;}
+</style>
+<div id="watt-header">
+  <div style="flex:1"></div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(21,101,192,.3)">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
     </div>
-    """,
+    <div>
+      <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:1.2rem;font-weight:700;color:#0D1B3E;letter-spacing:-0.2px;line-height:1.2">Watt Happens</div>
+      <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:0.72rem;color:#64748b;margin-top:1px">BESS Strategy &amp; Energy Intelligence Platform</div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;justify-content:flex-end;align-items:center">
+    <a href="https://www.linkedin.com/in/bibek-agarwal" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0D47A1,#1976D2);color:#fff!important;padding:8px 20px;border-radius:20px;font-weight:600;font-size:14px;text-decoration:none!important;box-shadow:0 2px 8px rgba(0,0,0,.25);letter-spacing:.3px;white-space:nowrap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+      Contact to know more
+    </a>
+  </div>
+</div>
+""",
     unsafe_allow_html=True,
 )
 
