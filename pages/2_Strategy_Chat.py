@@ -2656,6 +2656,18 @@ box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!impo
 <a class="cc-btn" href="https://www.linkedin.com/in/bibek-agarwal" target="_blank" style="display:inline-flex;align-items:center"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="white" style="vertical-align:middle;margin-right:6px;flex-shrink:0"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>Contact to know more</a>""",
         unsafe_allow_html=True,
     )
+
+    st.markdown(
+        """
+        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+        <div style="background:linear-gradient(135deg,#0A1628 0%,#0D2B6B 30%,#0D47A1 60%,#1565C0 100%);text-align:center;padding:30px 20px 26px;margin:-1rem -1rem 1.5rem -1rem;border-radius:0 0 18px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.4);position:relative;overflow:hidden">
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 120%,rgba(41,182,246,0.18) 0%,transparent 70%)"></div>
+          <h1 style="font-family:'Orbitron',monospace;color:#fff;font-size:2.6rem;margin:0;letter-spacing:8px;font-weight:900;text-shadow:0 0 40px rgba(79,195,247,0.9),0 0 80px rgba(79,195,247,0.4),0 3px 15px rgba(0,0,0,0.5);position:relative">⚡ WATT HAPPENS</h1>
+          <p style="color:rgba(255,255,255,0.6);margin:10px 0 0;font-size:0.8rem;letter-spacing:4px;text-transform:uppercase;font-family:'Segoe UI',sans-serif;position:relative">Nord Pool Energy Intelligence</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.title("Strategy Chat")
     st.markdown(
         "Type a trading strategy **or** a data query in plain English. "
