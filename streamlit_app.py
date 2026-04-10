@@ -147,7 +147,7 @@ def compute_arbitrage(
 
 
 def main() -> None:
-        st.markdown(
+    st.markdown(
         """
         <style>
         #watt-header{position:fixed;top:0;left:0;right:0;z-index:1000000;background:#fff;border-bottom:2px solid #e2e8f0;padding:0 20px 0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.06);}
