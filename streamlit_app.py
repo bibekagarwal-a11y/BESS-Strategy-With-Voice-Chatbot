@@ -153,7 +153,9 @@ def main() -> None:
         #watt-header{position:fixed;top:0;left:0;right:0;z-index:1000000;background:#fff;border-bottom:2px solid #e2e8f0;padding:0 20px;height:52px;display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.06);}
         [data-testid="stMainBlockContainer"]{padding-top:60px!important;}
         [data-testid="stSidebarCollapseButton"]{display:none!important;}
-        </style>
+        
+    #watt-header a,#watt-header a:visited{color:#fff!important;background:linear-gradient(135deg,#0D47A1,#1976D2)!important;text-decoration:none!important;border-radius:20px!important;padding:8px 20px!important;font-weight:600!important;font-size:14px!important;box-shadow:0 2px 8px rgba(0,0,0,.25)!important;letter-spacing:.3px!important;white-space:nowrap!important;display:inline-flex!important;align-items:center!important;gap:8px!important;}
+    #watt-header a:hover{opacity:.88!important;}</style>
         <div id="watt-header">
           <div style="flex:1"></div>
           <div style="display:flex;align-items:center;gap:12px">
