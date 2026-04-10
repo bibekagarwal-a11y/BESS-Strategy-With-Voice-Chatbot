@@ -147,6 +147,20 @@ def compute_arbitrage(
 
 
 def main() -> None:
+    st.markdown(
+        """
+        <div style="background:#ffffff;border-bottom:2px solid #e2e8f0;padding:14px 20px;margin:-1rem -3rem 1.5rem -3rem;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+          <div style="background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:10px;width:46px;height:46px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(21,101,192,0.3)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <div>
+            <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:1.4rem;font-weight:700;color:#0D1B3E;letter-spacing:-0.2px;line-height:1.2">Watt Happens</div>
+            <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:0.8rem;color:#64748b;margin-top:2px">BESS Strategy &amp; Energy Intelligence Platform</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.title("Nord Pool Price Explorer")
     st.markdown(
         """<style>
@@ -162,20 +176,6 @@ box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!impo
         unsafe_allow_html=True,
     )
 
-    st.markdown(
-        """
-        <div style="background:#ffffff;border-bottom:2px solid #e2e8f0;padding:14px 20px;margin:-1rem -1rem 1.5rem -1rem;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-          <div style="background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:10px;width:46px;height:46px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(21,101,192,0.3)">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-          </div>
-          <div>
-            <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:1.4rem;font-weight:700;color:#0D1B3E;letter-spacing:-0.2px;line-height:1.2">Watt Happens</div>
-            <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:0.8rem;color:#64748b;margin-top:2px">BESS Strategy &amp; Energy Intelligence Platform</div>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
     st.markdown(
         """
         This Streamlit app visualises electricity prices from the Nord Pool day‑ahead
