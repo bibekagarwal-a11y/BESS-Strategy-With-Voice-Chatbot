@@ -316,7 +316,7 @@ def _actual_vs_pred(res: dict, mname: str, area: str) -> go.Figure:
     if len(trd) > 0:
         fig.add_vline(
             x=trd["datetime"].iloc[-1].isoformat(), line_dash="dot", line_color="#9E9E9E",
-            annotation_text="← Train | Test →", annotation_position="top right",
+            annotation_text="Train | Test", annotation_position="top right",
         )
     fig.update_layout(
         title=f"{mname} — Actual vs Predicted ({area})",
