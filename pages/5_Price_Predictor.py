@@ -23,16 +23,21 @@ import lightgbm as lgb
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(layout="wide", page_title="Price Predictor", page_icon="🔮")
 st.markdown(
-    """<style>
-a.cc-btn{position:fixed;top:14px;right:60px;z-index:999999;
-background:linear-gradient(135deg,#0D47A1,#1976D2);color:#fff!important;
-padding:7px 16px;border-radius:20px;font-weight:600;font-size:13px;
-text-decoration:none!important;box-shadow:0 2px 8px rgba(0,0,0,.25);
-transition:all .2s ease;letter-spacing:.3px}
-a.cc-btn:hover{background:linear-gradient(135deg,#1565C0,#1E88E5);
-box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!important}
-</style>
-<a class="cc-btn" href="https://www.linkedin.com/in/bibek-agarwal" target="_blank" style="display:inline-flex;align-items:center"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="white" style="vertical-align:middle;margin-right:6px;flex-shrink:0"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>Contact to know more</a>""",
+    """
+    <style>
+    #watt-header{position:fixed;top:52px;left:0;right:0;z-index:999;background:#fff;border-bottom:2px solid #e2e8f0;padding:10px 2.5rem;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+    [data-testid="stMainBlockContainer"]{padding-top:80px!important;}
+    </style>
+    <div id="watt-header">
+      <div style="background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:10px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(21,101,192,.3)">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div>
+        <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:1.3rem;font-weight:700;color:#0D1B3E;letter-spacing:-0.2px;line-height:1.2">Watt Happens</div>
+        <div style="font-family:'Segoe UI',system-ui,sans-serif;font-size:0.75rem;color:#64748b;margin-top:1px">BESS Strategy &amp; Energy Intelligence Platform</div>
+      </div>
+    </div>
+    """,
     unsafe_allow_html=True,
 )
 
