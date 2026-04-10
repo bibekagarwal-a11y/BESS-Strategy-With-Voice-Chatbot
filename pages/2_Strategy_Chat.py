@@ -2660,9 +2660,10 @@ box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-1px);color:#fff!impo
     st.markdown(
         """
         <style>
-        #watt-header{position:fixed;top:52px;left:0;right:0;z-index:999;background:#fff;border-bottom:2px solid #e2e8f0;padding:10px 2.5rem;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
-        [data-testid="stMainBlockContainer"]{padding-top:80px!important;}
-        </style>
+        #watt-header{position:fixed;top:52px;left:0;right:0;z-index:1000000;background:#fff;border-bottom:2px solid #e2e8f0;padding:10px 2.5rem;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+    [data-testid="stMainBlockContainer"]{padding-top:80px!important;}
+    [data-testid="stSidebarContent"]{padding-top:66px!important;}
+    </style>
         <div id="watt-header">
           <div style="background:linear-gradient(135deg,#1565C0,#0D47A1);border-radius:10px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(21,101,192,.3)">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
