@@ -8,9 +8,9 @@ on:
         required: false
         default: "false"
   schedule:
-    # Hourly; the script self-gates to 15:00 Europe/Paris (DST-safe),
-    # so it effectively runs once per day at 15h CET/CEST.
-    - cron: "5 * * * *"
+    # Daily at 15:15 CET (13:15 UTC / 14:15 UTC in CEST) — after Nord Pool
+    # publishes day-ahead prices at ~13:00 CET. Adjust if needed.
+    - cron: "15 13 * * *"
 
 permissions:
   contents: write
@@ -22,8 +22,7 @@ jobs:
       AREAS: "AT,BE,FR,GER,NL"
       CURRENCY: "EUR"
       START_DATE: "2026-03-01"
-      ENFORCE_TIME_PARIS: "1"
-      TARGET_HOUR: "15"
+      ENFORCE_TIME_PARIS: "0"  # schedule handles timing; no self-gate needed
       BACKFILL: ${{ github.event.inputs.backfill == 'true' && '1' || '0' }}
 
     steps:
