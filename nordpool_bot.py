@@ -188,11 +188,11 @@ def run(backfill: bool):
     if backfill:
         dates = list(daterange(start, today))
     else:
-        # Daily run: refresh yesterday (the "day before") AND today.
-        # Yesterday's numbers are final; today's day-ahead has been
-        # published by ~13:00 Paris time so it is available at 15:00.
+        # Daily run: fetch only yesterday's finalized data.
+        # Day-ahead prices for yesterday's delivery are always final
+        # (published two days prior by ~13:00 CET), so this is safe.
         yesterday = today - timedelta(days=1)
-        dates = [yesterday, today]
+        dates = [yesterday]
 
     all_dayahead, all_ida1, all_ida2, all_ida3, all_vwap_qh = [], [], [], [], []
     auction_markets = [
