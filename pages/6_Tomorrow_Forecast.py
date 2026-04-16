@@ -588,7 +588,7 @@ with st.sidebar:
     selected_areas = st.multiselect(
         "Show areas",
         options=list(AREA_NAMES.keys()),
-        default=["AT"],
+        default=list(AREA_NAMES.keys()),
         format_func=lambda k: f"{k} — {AREA_NAMES[k]}",
     )
     st.markdown("---")
