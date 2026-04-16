@@ -22,6 +22,10 @@ import lightgbm as lgb
 # Page config
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(layout="wide", page_title="Price Predictor", page_icon="🔮")
+
+# Auto-run on first page visit (Austria with default params)
+if "pp_first_load" not in st.session_state:
+    st.session_state["pp_first_load"] = True
 st.markdown(
     """
 <style>
@@ -421,6 +425,7 @@ all_areas  = sorted(all_prices["area"].unique())
 selected_area = st.sidebar.selectbox(
     "Bidding Area",
     options=all_areas,
+    index=all_areas.index("AT") if "AT" in all_areas else 0,
     format_func=lambda a: f"{a} — {AREA_COORDS[a]['name']}",
 )
 
@@ -461,6 +466,11 @@ with st.sidebar.expander("⚙️ Advanced: Feature info"):
 """)
 
 run_clicked = st.sidebar.button("🚀 Run Prediction", type="primary")
+
+# Auto-run on first page visit — fires once, then waits for the button
+if st.session_state.get("pp_first_load", False):
+    run_clicked = True
+    st.session_state["pp_first_load"] = False
 
 
 # ─────────────────────────────────────────────────────────────────────────────
