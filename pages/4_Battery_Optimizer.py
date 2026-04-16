@@ -9,6 +9,10 @@ import io
 
 st.set_page_config(layout="wide", page_title="Battery Optimizer", page_icon="🔋")
 
+# Auto-run on first page visit (Austria with default params)
+if "bo_first_load" not in st.session_state:
+    st.session_state["bo_first_load"] = True
+
 st.markdown(
     """
 <style>
@@ -585,7 +589,7 @@ selected_markets = st.sidebar.multiselect(
 if not selected_markets:
     st.sidebar.warning("Select at least one market to run the optimizer.")
 
-area = st.sidebar.selectbox("Area", options=AREAS, index=4)
+area = st.sidebar.selectbox("Area", options=AREAS, index=0)
 
 day_filter = st.sidebar.selectbox("Day Filter", options=["All", "Weekdays", "Weekends"], index=0)
 
@@ -634,6 +638,11 @@ train_pct = st.sidebar.slider(
 st.sidebar.caption(f"Test (out-of-sample): {100 - train_pct}%")
 
 optimize_clicked = st.sidebar.button("🚀 Optimize", type="primary")
+
+# Auto-run on first page visit — fires once, then waits for the button
+if st.session_state.get("bo_first_load", False):
+    optimize_clicked = True
+    st.session_state["bo_first_load"] = False
 
 
 # ============================================================================
