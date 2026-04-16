@@ -588,7 +588,7 @@ with st.sidebar:
     selected_areas = st.multiselect(
         "Show areas",
         options=list(AREA_NAMES.keys()),
-        default=list(AREA_NAMES.keys()),
+        default=["AT"],
         format_func=lambda k: f"{k} — {AREA_NAMES[k]}",
     )
     st.markdown("---")
@@ -607,11 +607,14 @@ if run_btn:
 data = load_predictions()
 
 if data is None:
-    st.info(
-        "No predictions found yet. Click **🔄 Run predictions now** in the sidebar "
-        "to generate the first forecast, or wait until 11:45 CET."
-    )
-    st.stop()
+    st.info("No predictions found yet — running the forecast automatically for Austria with default parameters…")
+    try:
+        result = run_now()
+        st.success(f"✅ Predictions generated for {result['delivery_day']}")
+        st.rerun()
+    except Exception as e:
+        st.error(f"Auto-forecast failed: {e}. Click **🔄 Run predictions now** in the sidebar to retry.")
+        st.stop()
 
 if not data.get("predictions"):
     st.warning("Predictions file exists but contains no results. Try running again.")
