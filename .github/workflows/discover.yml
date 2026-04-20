@@ -3,6 +3,9 @@ name: Discover Nord Pool endpoints
 on:
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   discover:
     runs-on: ubuntu-latest
