@@ -15,6 +15,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -22,7 +25,7 @@ jobs:
       AREAS: "AT,BE,FR,GER,NL"
       CURRENCY: "EUR"
       START_DATE: "2026-03-01"
-      ENFORCE_TIME_PARIS: "0"  # schedule handles timing; no self-gate needed
+      ENFORCE_TIME_PARIS: "0" # schedule handles timing; no self-gate needed
       BACKFILL: ${{ github.event.inputs.backfill == 'true' && '1' || '0' }}
 
     steps:
