@@ -10,6 +10,9 @@ on:
     - cron: "0 15 * * *"
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   analysis:
     runs-on: ubuntu-latest
