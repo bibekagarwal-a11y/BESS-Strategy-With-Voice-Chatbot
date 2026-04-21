@@ -5,7 +5,7 @@ HTTP access logging for the Streamlit app.
 
 Streamlit is built on Tornado. This module monkey-patches
 Tornado's RequestHandler.log_request so that every HTTP request
-is emitted as a structured JSON log line to stdout, where Railway
+is emitted as a structured JSON log line to stderr, where Railway
 captures and indexes it automatically.
 
 Log fields
@@ -27,20 +27,23 @@ Import this module once, before any Streamlit rendering code runs:
 
 import json
 import logging
+import sys
 import time
 from datetime import datetime, timezone
 
 # ---------------------------------------------------------------------------
-# Root access logger – writes to stdout so Railway captures it
+# Root access logger – writes directly to stderr so Railway captures it
 # ---------------------------------------------------------------------------
 _access_logger = logging.getLogger("http.access")
 
 if not _access_logger.handlers:
-    _handler = logging.StreamHandler()
+    _handler = logging.StreamHandler(sys.stderr)
     _handler.setFormatter(logging.Formatter("%(message)s"))
     _access_logger.addHandler(_handler)
     _access_logger.setLevel(logging.INFO)
-    _access_logger.propagate = False
+    _access_logger.propagate = False  # prevent Streamlit's logging from interfering
+
+print("[logging_config] HTTP access logging initialised – writing to stderr", flush=True)
 
 
 def _log_request(handler) -> None:
@@ -73,7 +76,7 @@ def _log_request(handler) -> None:
         "user_agent": request.headers.get("User-Agent", ""),
     }
 
-    _access_logger.info(json.dumps(record))
+    print(json.dumps(record), file=sys.stderr, flush=True)
 
 
 def setup_access_logging() -> None:
