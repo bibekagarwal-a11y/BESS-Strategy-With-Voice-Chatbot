@@ -1,3 +1,5 @@
+import logging_config  # noqa: F401 – must be first; patches Tornado for HTTP access logging
+
 import os
 import pandas as pd
 import streamlit as st
